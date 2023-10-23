@@ -34,6 +34,9 @@ pip install git+https://github.com/ashawkey/kiuikit
 
 Install all the dependencies, and to spin the backend API use ```uvicorn main:app --reload  ``` 
 
+Go to ```http://127.0.0.1:8000/docs``` goto Upload Image POST, select 'Try it out' and browse and upload the image. 
+The expected response is the gif path of the 3D generation
+
 Tested on:
 * Ubuntu 22 with torch 1.12 & CUDA 11.6 on a V100.
 * Windows 10 with torch 2.1 & CUDA 12.1 on a 3070.
