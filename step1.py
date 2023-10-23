@@ -64,6 +64,7 @@ class GUI:
         
         # load input data from cmdline
         if self.opt.input is not None:
+            print(self.opt.input)
             self.load_input(self.opt.input)
         
         # override prompt from cmdline
@@ -342,6 +343,8 @@ class GUI:
 
     
     def load_input(self, file):
+        #Fix for windows
+        file = file.replace("\\", "/")
         # load image
         print(f'[INFO] load image from {file}...')
         img = cv2.imread(file, cv2.IMREAD_UNCHANGED)

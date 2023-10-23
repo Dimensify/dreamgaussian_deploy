@@ -66,8 +66,8 @@ def process_image(input_file: UploadFile):
 
     # Call the Python scripts using subprocess
     subprocess.run(["python", "process.py", f"data/{input_file.filename}"])
-    subprocess.run(["python", "step1.py", "--config", "configs/image.yaml", "input=data/" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python", "step2.py", "--config", "configs/image.yaml", "input=data/" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "step1.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "step2.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Save the video using kiui.render
     video_save_command = f"%run -m kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
