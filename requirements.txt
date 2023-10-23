@@ -1,0 +1,48 @@
+tqdm
+rich
+ninja
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+opencv-python
+imageio
+imageio-ffmpeg
+omegaconf
+
+torch
+einops
+plyfile
+pygltflib
+
+# for gui
+dearpygui
+
+# for stable-diffusion
+huggingface_hub
+diffusers >= 0.9.0
+accelerate
+transformers
+
+# for dmtet and mesh export
+xatlas
+trimesh
+PyMCubes
+pymeshlab
+
+rembg[gpu,cli]
+# rembg[cli]>=2.0
+
+# gradio demo
+gradio
+
+
+simple_knn==0.1
+
+fastapi
+uvicorn
+mangum
+
+Pillow
+moviepy
