@@ -6,7 +6,7 @@ import subprocess
 from mangum import Mangum
 from moviepy.editor import VideoFileClip
 from PIL import Image
-
+import kiui
 
 app = FastAPI()
 handler = Mangum(app)
@@ -70,8 +70,9 @@ def process_image(input_file: UploadFile):
     subprocess.run(["python", "step2.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Save the video using kiui.render
-    video_save_command = f"%run -m kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
-    subprocess.run(["python", "-c", video_save_command], shell=True)
+    # video_save_command = f"kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
+    # subprocess.run(["python", "-m", video_save_command], shell=True)
+    os.system(f"python -m kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast")
 
     # Input and output file paths
     input_video_path = f'{name}.mp4'

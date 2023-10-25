@@ -2,3 +2,5 @@ logs/
 __pycache__/
 simple-knn/
 data/
+test.ipynb
+*.mp4
