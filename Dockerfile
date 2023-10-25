@@ -38,12 +38,21 @@ COPY . .
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --cache-dir=/home/ubuntu/pip/cache -r /requirements.txt
 
+
+RUN git clone https://github.com/ashawkey/diff-gaussian-rasterization && \
+    pip install ./diff-gaussian-rasterization && \
+    # simple-knn
+    pip install ./simple-knn && \
+    # nvdiffrast
+    pip install git+https://github.com/NVlabs/nvdiffrast/ && \
+    # kiuikit
+    pip install git+https://github.com/ashawkey/kiuikit
 #RUN --mount=type=cache,target=/root/.cache/pip \
   #  --mount=type=bind,source=requirements.txt,target=requirements.txt \
   #  python -m pip install -r requirements.txt
 
 # Switch to the non-privileged user to run the application.
-USER appuser
+#USER appuser
 
 # Copy the source code into the container.
 #COPY . .

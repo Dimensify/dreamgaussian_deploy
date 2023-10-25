@@ -12,6 +12,7 @@ imageio-ffmpeg
 omegaconf
 
 torch
+torchvision
 einops
 plyfile
 pygltflib
@@ -46,3 +47,5 @@ mangum
 
 Pillow
 moviepy
+diff_gaussian_rasterization
+nvdiffrast

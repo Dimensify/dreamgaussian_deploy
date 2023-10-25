@@ -12,7 +12,7 @@ app = FastAPI()
 handler = Mangum(app)
 
 # Directory to store uploaded files
-UPLOAD_DIR = "data"
+UPLOAD_DIR = "./data"
 
 # Create the upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
