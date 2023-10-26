@@ -4,7 +4,7 @@
 # If you need more help, visit the Dockerfile reference guide at
 # https://docs.docker.com/engine/reference/builder/
 
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 WORKDIR /app
@@ -29,18 +29,22 @@ RUN apt update && \
     apt install --no-install-recommends -y build-essential software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt install --no-install-recommends -y python3 python3-pip python3-setuptools python3-distutils && \
+    apt install -y git && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /requirements.txt
 COPY . .
 
-
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --cache-dir=/home/ubuntu/pip/cache -r /requirements.txt
 
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+ENV CUDAToolkit_ROOT=/usr/local/cuda
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
+ENV TORCH_CUDA_ARCH_LIST=Turing
 
-RUN git clone https://github.com/ashawkey/diff-gaussian-rasterization && \
-    pip install ./diff-gaussian-rasterization && \
+RUN pip install ./diff-gaussian-rasterization && \
     # simple-knn
     pip install ./simple-knn && \
     # nvdiffrast
