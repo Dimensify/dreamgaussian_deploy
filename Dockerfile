@@ -8,6 +8,7 @@ FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
@@ -28,7 +29,7 @@ RUN adduser \
 RUN apt update && \
     apt install --no-install-recommends -y build-essential software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt install --no-install-recommends -y python3 python3-pip python3-setuptools python3-distutils && \
+    apt install --no-install-recommends -y python3 python3-dev python3-pip python3-setuptools python3-distutils && \
     apt install -y git && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
@@ -66,5 +67,3 @@ EXPOSE 8000
 
 # Run the application.
 CMD uvicorn 'main:app' --host=0.0.0.0 --port=8000
-
-
