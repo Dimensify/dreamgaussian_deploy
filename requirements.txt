@@ -47,5 +47,3 @@ mangum
 
 Pillow
 moviepy
-diff_gaussian_rasterization
-nvdiffrast

@@ -45,7 +45,8 @@ ENV CUDAToolkit_ROOT=/usr/local/cuda
 ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,video
 ENV TORCH_CUDA_ARCH_LIST=Turing
 
-RUN pip install ./diff-gaussian-rasterization && \
+RUN git clone --recursive https://github.com/ashawkey/diff-gaussian-rasterization && \
+    pip install ./diff-gaussian-rasterization && \
     # simple-knn
     pip install ./simple-knn && \
     # nvdiffrast
