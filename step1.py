@@ -64,7 +64,6 @@ class GUI:
         
         # load input data from cmdline
         if self.opt.input is not None:
-            print(self.opt.input)
             self.load_input(self.opt.input)
         
         # override prompt from cmdline

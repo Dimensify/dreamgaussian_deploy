@@ -6,7 +6,6 @@ import subprocess
 from mangum import Mangum
 from moviepy.editor import VideoFileClip
 from PIL import Image
-import kiui
 
 app = FastAPI()
 handler = Mangum(app)
