@@ -64,14 +64,14 @@ def process_image(input_file: UploadFile):
     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
     # Call the Python scripts using subprocess
-    subprocess.run(["python", "process.py", f"data/{input_file.filename}"])
-    subprocess.run(["python", "step1.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python", "step2.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python3", "process.py", f"data/{input_file.filename}"])
+    subprocess.run(["python3", "step1.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python3", "step2.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Save the video using kiui.render
     # video_save_command = f"kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
     # subprocess.run(["python", "-m", video_save_command], shell=True)
-    os.system(f"python -m kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast")
+    os.system(f"python3 -m kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast")
 
     # Input and output file paths
     input_video_path = f'{name}.mp4'
@@ -87,7 +87,7 @@ def process_image(input_file: UploadFile):
 def process_text(input_text, output_file_path):
     # Replace this with the actual command to process the text
     # For example, you can use subprocess to run your Python script
-    subprocess.run(["python", "process_text.py", input_text, output_file_path])
+    subprocess.run(["python3", "process_text.py", input_text, output_file_path])
 
 # Route to handle image uploads
 @app.post("/upload-image/")
