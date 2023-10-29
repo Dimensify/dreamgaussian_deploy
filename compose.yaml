@@ -17,6 +17,8 @@ services:
           devices:
             - driver: nvidia
               capabilities: [gpu]
+        limits:
+          memory: 20G # Set the memory limit to 20GB
     ports:
       - 8000:8000
     runtime: nvidia
