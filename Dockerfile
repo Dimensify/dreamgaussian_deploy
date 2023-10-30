@@ -45,8 +45,10 @@ RUN apt update && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt install --no-install-recommends -y python3 python3-dev python3-pip python3-setuptools python3-distutils && \
     apt install -y git && \
-    apt install ffmpeg libsm6 libxext6 libglm-dev -y && \
-    apt clean && rm -rf /var/lib/apt/lists/* &&
+    apt install ffmpeg libsm6 libxext6 -y && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+RUN apt install libglm-dev
 
 COPY requirements.txt /requirements.txt
 COPY . .
