@@ -11,7 +11,7 @@ app = FastAPI()
 handler = Mangum(app)
 
 # Directory to store uploaded files
-UPLOAD_DIR = "./data"
+UPLOAD_DIR = "./dreamgaussian/data"
 
 # Create the upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -64,18 +64,18 @@ def process_image(input_file: UploadFile):
     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
     # Call the Python scripts using subprocess
-    subprocess.run(["python3", "process.py", f"data/{input_file.filename}"])
-    subprocess.run(["python3", "step1.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python3", "step2.py", "--config", "configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python3", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+    subprocess.run(["python3", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python3", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Save the video using kiui.render
     # video_save_command = f"kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
     # subprocess.run(["python", "-m", video_save_command], shell=True)
-    os.system(f"python3 -m kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast")
+    os.system(f"python3 -m kiui.render dreamgaussian/logs/{name}.obj --save_video output/{name}.mp4 --wogui --force_cuda_rast")
 
     # Input and output file paths
-    input_video_path = f'{name}.mp4'
-    output_gif_path = f'{name}.gif'
+    input_video_path = f'output/{name}.mp4'
+    output_gif_path = f'output/{name}.gif'
 
     gif_path = make_gif(input_video_path,output_gif_path)
 

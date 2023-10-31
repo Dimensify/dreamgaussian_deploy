@@ -1,8 +1,8 @@
 logs/
 __pycache__/
-simple-knn/
-data/
+dreamgaussian/simple-knn/
+dreamgaussian/data/
 test.ipynb
-data/
+dreamgaussian/data/
 *.mp4
 *.gif
