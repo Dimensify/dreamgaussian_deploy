@@ -3,4 +3,6 @@ __pycache__/
 simple-knn/
 data/
 test.ipynb
+data/
 *.mp4
+*.gif

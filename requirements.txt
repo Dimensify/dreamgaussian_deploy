@@ -38,7 +38,6 @@ rembg[gpu,cli]
 # gradio demo
 gradio
 
-
 simple_knn==0.1
 
 fastapi
