@@ -23,13 +23,16 @@ git clone --recursive https://github.com/ashawkey/diff-gaussian-rasterization
 pip install ./diff-gaussian-rasterization
 
 # simple-knn
-pip install ./simple-knn
+pip install ./dreamgaussian/simple-knn
 
 # nvdiffrast
 pip install git+https://github.com/NVlabs/nvdiffrast/
 
 # kiuikit
 pip install git+https://github.com/ashawkey/kiuikit
+
+# MVDream
+pip install git+https://github.com/bytedance/MVDream
 ```
 
 Install all the dependencies, and to spin the backend API use ```uvicorn main:app --reload  ``` 
