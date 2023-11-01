@@ -14,6 +14,11 @@ UPLOAD_DIR = "./dreamgaussian/data"
 # Create the upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+## Creating the output directory
+OUTPUT_DIR = "./output"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
 def process_image(input_file: UploadFile):
     # Define the output file name without extension
     name = os.path.splitext(input_file.filename)[0]
