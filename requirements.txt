@@ -45,4 +45,4 @@ uvicorn
 mangum
 
 Pillow
-moviepy
+imageio

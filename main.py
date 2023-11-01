@@ -4,8 +4,6 @@ import shutil
 import os
 import subprocess
 from mangum import Mangum
-from moviepy.editor import VideoFileClip
-from PIL import Image
 
 app = FastAPI()
 handler = Mangum(app)
@@ -15,41 +13,6 @@ UPLOAD_DIR = "./dreamgaussian/data"
 
 # Create the upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-def make_gif(input_path,output_path):
-
-    input_video_path = input_path
-    output_gif_path = output_path
-
-    # Load the video
-    video_clip = VideoFileClip(input_video_path)
-
-    # Set the frame rate for the GIF (adjust as needed)
-    frame_rate = 10
-
-    # Resize the video to a smaller size (adjust as needed)
-    target_width = 320
-    target_height = 280
-    video_clip = video_clip.resize((target_width, target_height))
-
-    # Create a list to store GIF frames
-    gif_frames = []
-
-    # Generate GIF frames
-    for frame in video_clip.iter_frames(fps=frame_rate, dtype='uint8'):
-        gif_frames.append(Image.fromarray(frame))
-
-    # Save the GIF using Pillow
-    gif_frames[0].save(
-        output_gif_path,
-        save_all=True,
-        append_images=gif_frames[1:],
-        duration=1000 / frame_rate,
-        loop=0  # 0 means loop indefinitely
-    )
-
-    # Return the processed image path
-    return output_gif_path
 
 def process_image(input_file: UploadFile):
     # Define the output file name without extension
@@ -64,41 +27,48 @@ def process_image(input_file: UploadFile):
     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
     # Call the Python scripts using subprocess
-    subprocess.run(["python3", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    subprocess.run(["python3", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python3", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Save the video using kiui.render
     # video_save_command = f"kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
     # subprocess.run(["python", "-m", video_save_command], shell=True)
-    os.system(f"python3 -m kiui.render dreamgaussian/logs/{name}.obj --save_video output/{name}.mp4 --wogui --force_cuda_rast")
+    os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
 
-    # Input and output file paths
-    input_video_path = f'output/{name}.mp4'
-    output_gif_path = f'output/{name}.gif'
-
-    gif_path = make_gif(input_video_path,output_gif_path)
+    gif_path = f'output/{name}.gif'
 
     # Return the gif path
     return gif_path
 
-
 # Function to process text using process_text.py
-def process_text(input_text, output_file_path):
+def process_text(input_text):
+    save_path = input_text.replace(" ", "_")
     # Replace this with the actual command to process the text
     # For example, you can use subprocess to run your Python script
-    subprocess.run(["python3", "process_text.py", input_text, output_file_path])
+    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
+
+    # Converting to gif
+    print(f"python -m kiui.render logs/{save_path}.obj --save_video output/{save_path}.gif --wogui --force_cuda_rast")
+    os.system(f"python -m kiui.render logs/{save_path}.obj --save_video output/{save_path}.gif --wogui --force_cuda_rast")
+
+    # Input and output file paths
+    gif_path = f'output/{save_path}.gif'
+    
+    # Return the gif path
+    return gif_path
 
 # Route to handle image uploads
 @app.post("/upload-image/")
 async def upload_image(image: UploadFile):
     # Process the image
     try:
-        output_gif_path = process_image(image)
+        gif = process_image(image)
 
         # Return the processed GIF
         # return FileResponse(output_file_path)
-        return FileResponse(output_gif_path)
+        return FileResponse(gif)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
@@ -108,13 +78,12 @@ async def upload_image(image: UploadFile):
 @app.post("/process-text/")
 async def process_text_endpoint(text: str = Form(...)):
     # Define the output GIF file path
-    output_file_path = f"{UPLOAD_DIR}/text_output.gif"
-
     try:
         # Process the text
-        process_text(text, output_file_path)
+        gif = process_text(text)
         # Return the processed GIF
-        return FileResponse(output_file_path)
+        return FileResponse(gif)
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
