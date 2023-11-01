@@ -49,6 +49,8 @@ def process_image(input_file: UploadFile):
 # Function to process text using process_text.py
 def process_text(input_text):
     save_path = input_text.replace(" ", "_")
+    ## Remove all special characters from the save path
+    save_path = "".join(e for e in save_path if e.isalnum())
     # Replace this with the actual command to process the text
     # For example, you can use subprocess to run your Python script
     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
