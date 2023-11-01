@@ -50,7 +50,6 @@ def process_text(input_text):
     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
 
     # Converting to gif
-    print(f"python -m kiui.render logs/{save_path}.obj --save_video output/{save_path}.gif --wogui --force_cuda_rast")
     os.system(f"python -m kiui.render logs/{save_path}.obj --save_video output/{save_path}.gif --wogui --force_cuda_rast")
 
     # Input and output file paths
