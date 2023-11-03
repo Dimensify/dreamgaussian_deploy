@@ -15,6 +15,13 @@ https://github.com/dreamgaussian/dreamgaussian/assets/25863658/db860801-7b9c-4b3
 * Image-to-3D: <a href="https://huggingface.co/spaces/jiawei011/dreamgaussian"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Gradio%20Demo-Huggingface-orange"></a>
 
 ## Install
+To clone the repository:
+```bash
+git clone https://github.com/Dimensify/dreamgaussian_deploy/
+git checkout deploy
+git submodule update --recursive
+```
+
 ```bash
 pip install -r requirements.txt
 
