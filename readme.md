@@ -24,8 +24,9 @@ Instance Required: P3.8xlarge
 To clone the repository:
 ```bash
 git clone https://github.com/Dimensify/dreamgaussian_deploy/
+cd dreamgaussian_deploy
 git checkout deploy
-git submodule update --recursive
+git submodule update --recursive --init
 ```
 
 ```bash
