@@ -3,4 +3,4 @@
 	url = https://github.com/Dimensify/dreamgaussian_deploy
 [submodule "dreamgaussian"]
 	path = dreamgaussian
-	url = https://github.com/Dimensify/dreamgaussian
+	url = https://github.com/dreamgaussian/dreamgaussian
