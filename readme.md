@@ -15,10 +15,10 @@ https://github.com/dreamgaussian/dreamgaussian/assets/25863658/db860801-7b9c-4b3
 ### [Gradio demo](https://huggingface.co/spaces/jiawei011/dreamgaussian)
 * Image-to-3D: <a href="https://huggingface.co/spaces/jiawei011/dreamgaussian"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Gradio%20Demo-Huggingface-orange"></a>
 
+
 ## AWS Configuration for the instance
 Image Required:Deep Learning AMI GPU PyTorch 2.0.1 (Ubuntu 20.04) 20231003
 Instance Required: P3.8xlarge
-
 
 ## Install
 To clone the repository:
