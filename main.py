@@ -4,6 +4,7 @@ import shutil
 import os
 import subprocess
 from mangum import Mangum
+from PIL import Image, ImageSequence
 
 app = FastAPI()
 handler = Mangum(app)
@@ -18,6 +19,22 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 OUTPUT_DIR = "./output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+
+def make_gif_loop_infinitely(input_gif_path, output_gif_path):
+    # Open the GIF file
+    gif = Image.open(input_gif_path)
+
+    frames = []
+    for frame in ImageSequence.Iterator(gif):
+        frames.append(frame.copy())
+
+    # Modify the loop flag to make the GIF loop infinitely
+    if len(frames) > 1:
+        # Setting the loop flag to 0 will make the GIF loop indefinitely
+        frames[0].info['loop'] = 0
+
+    # Save the modified frames as a new GIF file
+    frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
 def process_image(input_file: UploadFile):
     # Define the output file name without extension
@@ -48,6 +65,9 @@ def process_image(input_file: UploadFile):
     shutil.make_archive(f'output/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
     shutil.rmtree(f'logs/{name}')
+    
+    # Make the GIF loop infinitely
+    make_gif_loop_infinitely(f'output/{name}.gif', f'output/{name}.gif')
 
     # Add gif path and zip path to a json format
     json = {"gif_path": f'output/{name}.gif', "zip_path": f'output/{name}.zip'}
@@ -58,7 +78,7 @@ def process_image(input_file: UploadFile):
 # Function to process text using process_text.py
 def process_text(input_text):
     ## Remove all special characters from the save path
-    save_path = "".join(e for e in save_path if e.isalnum()).lower()
+    save_path = "".join(e for e in input_text if e.isalnum()).lower()
     # Replace this with the actual command to process the text
     # For example, you can use subprocess to run your Python script
     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
@@ -76,6 +96,9 @@ def process_text(input_text):
     shutil.make_archive(f'output/{save_path}', 'zip', f'logs/{save_path}')
     # Remove the logs/name folder
     shutil.rmtree(f'logs/{save_path}')
+
+    # Make the GIF loop infinitely
+    make_gif_loop_infinitely(f'output/{save_path}.gif', f'output/{save_path}.gif')
 
     # Add gif path and zip path to a json format
     json = {"gif_path": f'output/{save_path}.gif', "zip_path": f'output/{save_path}.zip'}
