@@ -1,3 +1,4 @@
+
 # DreamGaussian
 
 This repository contains the official implementation for [DreamGaussian: Generative Gaussian Splatting for Efficient 3D Content Creation](https://arxiv.org/abs/2309.16653).
@@ -14,7 +15,20 @@ https://github.com/dreamgaussian/dreamgaussian/assets/25863658/db860801-7b9c-4b3
 ### [Gradio demo](https://huggingface.co/spaces/jiawei011/dreamgaussian)
 * Image-to-3D: <a href="https://huggingface.co/spaces/jiawei011/dreamgaussian"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Gradio%20Demo-Huggingface-orange"></a>
 
+
+## AWS Configuration for the instance
+Image Required:Deep Learning AMI GPU PyTorch 2.0.1 (Ubuntu 20.04) 20231003
+Instance Required: P3.8xlarge
+
 ## Install
+To clone the repository:
+```bash
+git clone https://github.com/Dimensify/dreamgaussian_deploy/
+cd dreamgaussian_deploy
+git checkout deploy
+git submodule update --recursive --init
+```
+
 ```bash
 pip install -r requirements.txt
 
@@ -35,7 +49,7 @@ pip install git+https://github.com/ashawkey/kiuikit
 pip install git+https://github.com/bytedance/MVDream
 ```
 
-Install all the dependencies, and to spin the backend API use ```uvicorn main:app --reload  ``` 
+Install all the dependencies, and to spin the backend API use ```uvicorn 'main:app' --host=0.0.0.0 --port=8000``` 
 
 Go to ```http://127.0.0.1:8000/docs``` goto Upload Image POST, select 'Try it out' and browse and upload the image. 
 The expected response is the gif path of the 3D generation
