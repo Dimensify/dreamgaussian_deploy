@@ -4,5 +4,6 @@ dreamgaussian/simple-knn/
 dreamgaussian/data/
 test.ipynb
 dreamgaussian/data/
+output/
 *.mp4
 *.gif
