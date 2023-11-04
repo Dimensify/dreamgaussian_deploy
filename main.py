@@ -32,20 +32,18 @@ def process_image(input_file: UploadFile):
     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
     # Call the Python scripts using subprocess
-    # subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    # subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
-    # Save the video using kiui.render
-    # video_save_command = f"kiui.render logs/{name}.obj --save_video {name}.mp4 --wogui --force_cuda_rast"
-    # subprocess.run(["python", "-m", video_save_command], shell=True)
+    # Coverting to gif
     os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
+
     ## Move png, mtl and obj file to a new folder name
     os.makedirs(f'logs/{name}', exist_ok=True)
     shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
     shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
     shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
-
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
@@ -69,14 +67,18 @@ def process_text(input_text):
     # Converting to gif
     os.system(f"python -m kiui.render logs/{save_path}.obj --save_video output/{save_path}.gif --wogui --force_cuda_rast")
 
-    # Input and output file paths
-    gif_path = f'output/{save_path}.gif'
-
+    ## Move png, mtl and obj file to a new folder name
+    os.makedirs(f'logs/{save_path}', exist_ok=True)
+    shutil.move(f'logs/{save_path}.obj', f'logs/{save_path}/{save_path}.obj')
+    shutil.move(f'logs/{save_path}.mtl', f'logs/{save_path}/{save_path}.mtl')
+    shutil.move(f'logs/{save_path}_albedo.png', f'logs/{save_path}/{save_path}_albedo.png')
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{save_path}', 'zip', f'logs/{save_path}')
-    
+    # Remove the logs/name folder
+    shutil.rmtree(f'logs/{save_path}')
+
     # Add gif path and zip path to a json format
-    json = {"gif_path": gif_path, "zip_path": f'output/{save_path}.zip'}
+    json = {"gif_path": f'output/{save_path}.gif', "zip_path": f'output/{save_path}.zip'}
 
     # Return the json
     return json
