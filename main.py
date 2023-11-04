@@ -108,7 +108,7 @@ def process_text(input_text):
 
 # Route to handle image uploads
 @app.post("/upload-image/")
-async def upload_image(image: UploadFile):
+async def process_image_endpoint(image: UploadFile):
     # Process the image
     try:
         path = process_image(image)
@@ -134,11 +134,15 @@ async def process_text_endpoint(text: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
-@app.post("/get-file/")
-async def process_text_endpoint(file_path: str = Form(...)):
+@app.post("/get-zip/")
+async def get_zip(file_path: str = Form(...)):
 
     # Getting the file name
     file_name = file_path.split('/')[-1]
+
+    ## Check if the file extension is zip with assert
+    if not file_name.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="File extension is not zip")
     
     # Define the output GIF file path
     try:
@@ -148,7 +152,24 @@ async def process_text_endpoint(file_path: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-    
+
+@app.post("/render-gif/")
+async def render_gif(file_path: str = Form(...)):
+
+    # Getting the file name
+    file_name = file_path.split('/')[-1]
+
+    ## Check if the file extension is gif with assert
+    if not file_name.endswith('.gif'):
+        raise HTTPException(status_code=400, detail="File extension is not gif")
+
+    # Define the output GIF file path
+    try:
+        # Return the processed GIF
+        return FileResponse(file_path, media_type='image/gif')
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 if __name__ == "__main__":
     import uvicorn
