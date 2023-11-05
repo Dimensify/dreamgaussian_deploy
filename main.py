@@ -107,8 +107,36 @@ def process_text(input_text):
     return json
 
 # Route to handle image uploads
-@app.post("/upload-image/")
-async def process_image_endpoint(image: UploadFile):
+@app.post("/upload-image-swagger/")
+async def process_image_endpoint_swagger(image: UploadFile):
+    # Process the image
+    try:
+        path = process_image(image)
+
+        # Return the processed GIF
+        # return FileResponse(output_file_path)
+        
+        return FileResponse(path['gif_path'], media_type='image/gif')
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+    
+
+# Route to handle text inputs
+@app.post("/process-text-swagger/")
+async def process_text_endpoint_swagger(text: str = Form(...)):
+    # Define the output GIF file path
+    try:
+        # Process the text
+        path = process_text(text)
+        # Return the processed GIF
+        return FileResponse(path['gif_path'], media_type='image/gif')
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+    
+@app.post("/upload-image-json/")
+async def process_image_endpoint_json(image: UploadFile):
     # Process the image
     try:
         path = process_image(image)
@@ -122,8 +150,8 @@ async def process_image_endpoint(image: UploadFile):
     
 
 # Route to handle text inputs
-@app.post("/process-text/")
-async def process_text_endpoint(text: str = Form(...)):
+@app.post("/process-text-json/")
+async def process_text_endpoint_json(text: str = Form(...)):
     # Define the output GIF file path
     try:
         # Process the text
