@@ -19,6 +19,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 OUTPUT_DIR = "./output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+### UTILITIES ###
 
 def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     # Open the GIF file
@@ -35,6 +36,34 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
 
     # Save the modified frames as a new GIF file
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
+
+def convert_and_pack_results(name):
+    ## Converting to gif
+    # Coverting to gif
+    os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
+    # Make the GIF loop infinitely
+    make_gif_loop_infinitely(f'output/{name}.gif', f'output/{name}.gif')
+
+    ## Move png, mtl and obj file to a new folder name
+    os.makedirs(f'logs/{name}', exist_ok=True)
+    shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
+    shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
+    shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
+    shutil.copy(f'output/{name}.gif', f'logs/{name}/{name}.gif')
+    # Saving the obj, mtl and png files into a zip file
+    shutil.make_archive(f'output/{name}', 'zip', f'logs/{name}')
+    # Remove the logs/name folder
+    shutil.rmtree(f'logs/{name}')
+    
+    # Clear all the files in the logs folder
+    for file in os.listdir('logs'):
+        os.remove(f'logs/{file}')
+
+    # Add gif path and zip path to a json format
+    json = {"gif_path": f'output/{name}.gif', "zip_path": f'output/{name}.zip'}
+
+    return json
+
 
 def process_image(input_file: UploadFile):
     # Define the output file name without extension
@@ -53,27 +82,8 @@ def process_image(input_file: UploadFile):
     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
-    # Coverting to gif
-    os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
-
-    ## Move png, mtl and obj file to a new folder name
-    os.makedirs(f'logs/{name}', exist_ok=True)
-    shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
-    shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
-    shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
-    # Saving the obj, mtl and png files into a zip file
-    shutil.make_archive(f'output/{name}', 'zip', f'logs/{name}')
-    # Remove the logs/name folder
-    shutil.rmtree(f'logs/{name}')
-    
-    # Make the GIF loop infinitely
-    make_gif_loop_infinitely(f'output/{name}.gif', f'output/{name}.gif')
-
-    # Add gif path and zip path to a json format
-    json = {"gif_path": f'output/{name}.gif', "zip_path": f'output/{name}.zip'}
-
     # Return the json
-    return json
+    return convert_and_pack_results(name)
 
 # Function to process text using process_text.py
 def process_text(input_text):
@@ -84,38 +94,19 @@ def process_text(input_text):
     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
 
-    # Converting to gif
-    os.system(f"python -m kiui.render logs/{save_path}.obj --save_video output/{save_path}.gif --wogui --force_cuda_rast")
-
-    ## Move png, mtl and obj file to a new folder name
-    os.makedirs(f'logs/{save_path}', exist_ok=True)
-    shutil.move(f'logs/{save_path}.obj', f'logs/{save_path}/{save_path}.obj')
-    shutil.move(f'logs/{save_path}.mtl', f'logs/{save_path}/{save_path}.mtl')
-    shutil.move(f'logs/{save_path}_albedo.png', f'logs/{save_path}/{save_path}_albedo.png')
-    # Saving the obj, mtl and png files into a zip file
-    shutil.make_archive(f'output/{save_path}', 'zip', f'logs/{save_path}')
-    # Remove the logs/name folder
-    shutil.rmtree(f'logs/{save_path}')
-
-    # Make the GIF loop infinitely
-    make_gif_loop_infinitely(f'output/{save_path}.gif', f'output/{save_path}.gif')
-
-    # Add gif path and zip path to a json format
-    json = {"gif_path": f'output/{save_path}.gif', "zip_path": f'output/{save_path}.zip'}
-
     # Return the json
-    return json
+    return convert_and_pack_results(save_path)
+
+
+### API ### 
+
 
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
 async def process_image_endpoint_swagger(image: UploadFile):
     # Process the image
     try:
-        path = process_image(image)
-
-        # Return the processed GIF
-        # return FileResponse(output_file_path)
-        
+        path = process_image(image)        
         return FileResponse(path['gif_path'], media_type='image/gif')
 
     except Exception as e:
