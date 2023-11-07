@@ -152,7 +152,8 @@ async def process_image_endpoint_json(image: UploadFile):
 @app.post("/dummy_method/")
 async def dummyMethod(text:str = Form(...)):
     try:
-        return "processed successfully:"+ text
+        json = {"res": f'suffessfully', "done": f'processed'}
+        return json;
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
