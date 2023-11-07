@@ -147,7 +147,12 @@ async def process_image_endpoint_json(image: UploadFile):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
-    
+
+
+@app.post("/dummy_method/")
+async def dummyMethod(text:str = Form(...)):
+    try:
+        return "processed successfully"
 
 # Route to handle text inputs
 @app.post("/process-text-json/")
