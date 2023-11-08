@@ -203,7 +203,7 @@ async def render_gif(file_path: str = Form(...)):
     # Define the output GIF file path
     try:
         # Return the processed GIF
-        return FileResponse(file_path, media_type='image/gif')
+        return FileResponse(file_path, media_type='image/gif',filename=file_name)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
