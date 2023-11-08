@@ -169,7 +169,16 @@ async def process_image_endpoint_json(image: UploadFile):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
-    
+
+
+@app.post("/dummy_method/")
+async def dummyMethod(text:str = Form(...)):
+    try:
+        json = {"res": f'suffessfully', "done": f'processed'}
+        return json;
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
 
 # Route to handle text inputs
 @app.post("/process-text-json/")
@@ -217,6 +226,7 @@ async def render_gif(file_path: str = Form(...)):
     try:
         # Return the processed GIF
         return FileResponse(file_path, media_type='image/gif', filename=file_name)
+        return FileResponse(file_path, media_type='image/gif',filename=file_name)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
