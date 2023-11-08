@@ -5,9 +5,13 @@ import os
 import subprocess
 from mangum import Mangum
 from PIL import Image, ImageSequence
+import pandas as pd
+from datetime import datetime
+import uvicorn
 
 app = FastAPI()
 handler = Mangum(app)
+config = uvicorn.Config(app="main:app")
 
 # Directory to store uploaded files
 UPLOAD_DIR = "./dreamgaussian/data"
@@ -97,6 +101,21 @@ def process_text(input_text):
     # Return the json
     return convert_and_pack_results(save_path)
 
+def add_to_port_status(port,api):
+    ## Open the csv file port_status.csv
+    port_status = pd.read_csv('port_status.csv')
+    ## Insert the row into the csv file with port number, api name and time
+    port_status = port_status.append({'port': port, 'api_name': api, 'time': datetime.now()}, ignore_index=True)
+    ## Save the csv file
+    port_status.to_csv('port_status.csv', index=False)
+
+def remove_from_port_status(port):
+    ## Open the csv file port_status.csv
+    port_status = pd.read_csv('port_status.csv')
+    ## Remove the row with the port number
+    port_status = port_status[port_status['port'] != port]
+    ## Save the csv file
+    port_status.to_csv('port_status.csv', index=False)
 
 ### API ### 
 
@@ -106,10 +125,16 @@ def process_text(input_text):
 async def process_image_endpoint_swagger(image: UploadFile):
     # Process the image
     try:
+        # Add log to port_status.csv
+        add_to_port_status(config.port, 'upload-image-swagger')
         path = process_image(image)        
+        # Remove log from port_status.csv
+        remove_from_port_status(config.port)
         return FileResponse(path['gif_path'], media_type='image/gif')
 
     except Exception as e:
+        # Remove log from port_status.csv
+        remove_from_port_status(config.port)
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
@@ -118,12 +143,18 @@ async def process_image_endpoint_swagger(image: UploadFile):
 async def process_text_endpoint_swagger(text: str = Form(...)):
     # Define the output GIF file path
     try:
+        # Add log to port_status.csv
+        add_to_port_status(config.port, 'process-text-swagger')
         # Process the text
         path = process_text(text)
+        # Remove log from port_status.csv
+        remove_from_port_status(config.port)
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
     except Exception as e:
+        # Remove log from port_status.csv
+        remove_from_port_status(config.port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 @app.post("/upload-image-json/")
@@ -185,11 +216,10 @@ async def render_gif(file_path: str = Form(...)):
     # Define the output GIF file path
     try:
         # Return the processed GIF
-        return FileResponse(file_path, media_type='image/gif')
+        return FileResponse(file_path, media_type='image/gif', filename=file_name)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=config.port)
