@@ -26,6 +26,18 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 ### UTILITIES ###
 def get_server_port():
+    '''
+    Returns the port number of the server
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    str: 
+        port number
+    '''
     print(sys.argv)
     for i,arg in enumerate(sys.argv):
         if arg.startswith("--port"):
@@ -33,6 +45,20 @@ def get_server_port():
     return None
 
 def make_gif_loop_infinitely(input_gif_path, output_gif_path):
+    '''
+    Modifies the loop flag of a GIF file to make it loop infinitely
+
+    Parameters
+    ----------
+    input_gif_path: str
+        Path to the input GIF file
+    output_gif_path: str    
+        Path to the output GIF file
+
+    Returns
+    -------
+    None
+    '''
     # Open the GIF file
     gif = Image.open(input_gif_path)
 
@@ -49,7 +75,20 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
 def convert_and_pack_results(name):
-    ## Converting to gif
+    '''
+    Converts the .obj file to .gif and packs the results into a zip file
+
+    Parameters
+    ----------
+    name: str
+        Name of the .obj file
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
+
     # Coverting to gif
     os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
     # Make the GIF loop infinitely
@@ -77,6 +116,20 @@ def convert_and_pack_results(name):
 
 
 def process_image(input_file: UploadFile):
+    '''
+    Processes the uploaded image and converts to 3D
+
+    Parameters
+    ----------
+    input_file: UploadFile  
+        Uploaded image file
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
+
     # Define the output file name without extension
     name = os.path.splitext(input_file.filename)[0]
     
@@ -98,6 +151,20 @@ def process_image(input_file: UploadFile):
 
 # Function to process text using process_text.py
 def process_text(input_text):
+    '''
+    Processes the text and converts to 3D
+
+    Parameters
+    ----------
+    input_text: str
+        Text to be processed
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
+
     ## Remove all special characters from the save path
     save_path = "".join(e for e in input_text if e.isalnum()).lower()
     # Replace this with the actual command to process the text
@@ -109,6 +176,20 @@ def process_text(input_text):
     return convert_and_pack_results(save_path)
 
 def add_to_port_status(port,api):
+    '''
+    Adds the port number, api name and time to the csv file port_status.csv
+
+    Parameters
+    ----------
+    port: str
+        Port number of the server
+    api: str
+        Name of the api
+
+    Returns
+    -------
+    None
+    '''
     ## Open the csv file port_status.csv
     port_status = pd.read_csv('port_status.csv')
     ## Insert the row into the csv file with port number, api name and time
@@ -117,6 +198,19 @@ def add_to_port_status(port,api):
     port_status.to_csv('port_status.csv', index=False)
 
 def remove_from_port_status(port):
+    '''
+    Removes the port number from the csv file port_status.csv
+
+    Parameters
+    ----------
+    port: str
+        Port number of the server
+
+    Returns
+    -------
+    None
+    '''
+
     ## Open the csv file port_status.csv
     port_status = pd.read_csv('port_status.csv')
     ## Remove the row with the port number
@@ -139,6 +233,19 @@ async def dummyMethod(text:str = Form(...)):
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
 async def process_image_endpoint_swagger(image: UploadFile):
+    '''
+    Processes the uploaded image and converts to 3D to render on Swagger UI
+
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+
+    Returns
+    ------- 
+    FileResponse:
+        Returns the processed GIF file and renders it directly on Swagger UI
+    '''
     port = get_server_port()
     # Process the image
     try:
@@ -158,6 +265,20 @@ async def process_image_endpoint_swagger(image: UploadFile):
 # Route to handle text inputs
 @app.post("/process-text-swagger/")
 async def process_text_endpoint_swagger(text: str = Form(...)):
+    '''
+    Processes the text and converts to 3D to render on Swagger UI
+
+    Parameters
+    ----------
+    text: str
+        Text to be processed
+
+    Returns
+    -------
+    FileResponse:
+        Returns the processed GIF file and renders it directly on Swagger UI
+    '''
+
     # Define the output GIF file path
     port = get_server_port()
     try:
@@ -177,6 +298,19 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
     
 @app.post("/upload-image-json/")
 async def process_image_endpoint_json(image: UploadFile):
+    '''
+    Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
+
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
     port = get_server_port()
     try:
         # Add log to port_status.csv
@@ -196,6 +330,19 @@ async def process_image_endpoint_json(image: UploadFile):
 # Route to handle text inputs
 @app.post("/process-text-json/")
 async def process_text_endpoint_json(text: str = Form(...)):
+    '''
+    Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
+
+    Parameters
+    ----------
+    text: str
+        Text to be processed
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
     port = get_server_port()
     try:
         # Add log to port_status.csv
@@ -214,6 +361,19 @@ async def process_text_endpoint_json(text: str = Form(...)):
 
 @app.post("/get-zip/")
 async def get_zip(file_path: str = Form(...)):
+    '''
+    Returns the ZIP file
+
+    Parameters
+    ----------
+    file_path: str
+        Path to the ZIP file
+
+    Returns
+    -------
+    FileResponse:
+        Returns the ZIP file in octet-stream format
+    '''
     
     # Getting the file name
     file_name = file_path.split('/')[-1]
@@ -233,6 +393,19 @@ async def get_zip(file_path: str = Form(...)):
 
 @app.post("/render-gif/")
 async def render_gif(file_path: str = Form(...)):
+    '''
+    Returns the GIF file
+
+    Parameters
+    ----------
+    file_path: str
+        Path to the GIF file
+
+    Returns
+    -------
+    FileResponse:
+        Returns the GIF file in image/gif format
+    '''
 
     # Getting the file name
     file_name = file_path.split('/')[-1]
