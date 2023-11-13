@@ -11,6 +11,14 @@ import uvicorn
 import sys 
 
 app = FastAPI()
+corsWhitelist = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null']
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 handler = Mangum(app)
 config = uvicorn.Config(app="main:app")
 
@@ -221,15 +229,8 @@ def remove_from_port_status(port):
 ### API ### 
 
 @app.post("/dummy_method/")
-async def dummyMethod(response:Response,text:str = Form(...)):
+async def dummyMethod(text:str = Form(...)):
     try:
-        corsWhitelist = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null'];
-
-        for cors in corsWhitelist:
-            res.header('Access-Control-Allow-Origin', req.headers.origin);
-            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-
-
         json = {"res": f'suffessfully', "done": f'processed'}
         return json;
         
