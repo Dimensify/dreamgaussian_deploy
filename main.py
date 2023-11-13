@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
 import os
@@ -11,6 +12,14 @@ import uvicorn
 import sys 
 
 app = FastAPI()
+origins = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null']
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 handler = Mangum(app)
 config = uvicorn.Config(app="main:app")
 
