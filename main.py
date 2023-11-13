@@ -223,7 +223,7 @@ def remove_from_port_status(port):
 @app.post("/dummy_method/")
 async def dummyMethod(response:Response,text:str = Form(...)):
     try:
-        corsWhitelist = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444'];
+        corsWhitelist = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null'];
 
         for cors in corsWhitelist:
             res.header('Access-Control-Allow-Origin', req.headers.origin);
