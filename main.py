@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException, Response
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -12,7 +12,7 @@ import uvicorn
 import sys 
 
 app = FastAPI()
-origins = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null']
+origins = ['https://dimensify.ai','null']
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -403,6 +403,40 @@ async def get_zip(file_path: str = Form(...)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+
+
+@app.post("/render-gif-swagger/")
+async def render_gif(file_path: str = Form(...)):
+    """
+    Returns the GIF file
+
+    Parameters
+    ----------
+    file_path: str
+        Path to the GIF file
+
+    Returns
+    -------
+    FileResponse:
+        Returns the GIF file in image/gif format
+    """
+
+    # Getting the file name
+    file_name = file_path.split("/")[-1]
+
+    ## Check if the file extension is gif with assert
+    if not file_name.endswith(".gif"):
+        raise HTTPException(status_code=400, detail="File extension is not gif")
+
+    # Define the output GIF file path
+    try:
+        # Return the processed GIF
+        return FileResponse(file_path, media_type="image/gif")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+
+    
     
 
 @app.post("/render-gif/")
