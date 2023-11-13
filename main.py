@@ -12,7 +12,7 @@ import uvicorn
 import sys 
 
 app = FastAPI()
-corsWhitelist = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null']
+origins = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null']
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
