@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException, Response
 from fastapi.responses import FileResponse
 import shutil
 import os
@@ -221,8 +221,18 @@ def remove_from_port_status(port):
 ### API ### 
 
 @app.post("/dummy_method/")
-async def dummyMethod(text:str = Form(...)):
+async def dummyMethod(text:str = Form(...),response:Response):
     try:
+         const corsWhitelist = [
+        'https://backend.dimensify.ai',
+        'https://backend.dimensify.ai:444'
+        ];
+
+        for cors in corsWhitelist:
+            res.header('Access-Control-Allow-Origin', req.headers.origin);
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
+
         json = {"res": f'suffessfully', "done": f'processed'}
         return json;
         
