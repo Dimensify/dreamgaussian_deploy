@@ -47,7 +47,6 @@ def get_server_port():
     str: 
         port number
     '''
-    print(sys.argv)
     for i,arg in enumerate(sys.argv):
         if arg.startswith("--port"):
             return sys.argv[i+1]
