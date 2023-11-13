@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, Form, File, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
 import os
