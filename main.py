@@ -115,7 +115,13 @@ def convert_and_pack_results(name):
     
     # Clear all the files in the logs folder
     for file in os.listdir('logs'):
-        os.remove(f'logs/{file}')
+        ## Check if it's a file
+        if os.path.isfile(f'logs/{file}'):
+            ## Remove the file
+            os.remove(f'logs/{file}')
+        elif os.path.isdir(f'logs/{file}'):
+            ## Remove the directory
+            shutil.rmtree(f'logs/{file}')
 
     # Add gif path and zip path to a json format
     json = {"gif_path": f'output/{name}.gif', "zip_path": f'output/{name}.zip'}
