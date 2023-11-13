@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException, Response
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -12,7 +12,7 @@ import uvicorn
 import sys 
 
 app = FastAPI()
-origins = ['https://backend.dimensify.ai','https://backend.dimensify.ai:444','null']
+origins = ['https://dimensify.ai','null']
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
