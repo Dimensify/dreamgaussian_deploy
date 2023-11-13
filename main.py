@@ -193,7 +193,7 @@ def add_to_port_status(port,api):
     ## Open the csv file port_status.csv
     port_status = pd.read_csv('port_status.csv')
     ## Insert the row into the csv file with port number, api name and time
-    port_status = port_status.append({'port': port, 'api_name': api, 'time': datetime.now()}, ignore_index=True)
+    port_status = pd.concat([port_status, pd.DataFrame([[port, api, datetime.now()]], columns=['port', 'api_name', 'time'])])
     ## Save the csv file
     port_status.to_csv('port_status.csv', index=False)
 
