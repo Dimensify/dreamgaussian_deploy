@@ -7,3 +7,5 @@ dreamgaussian/data/
 output/
 *.mp4
 *.gif
+*.csv
+port_status.csv
