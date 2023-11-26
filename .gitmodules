@@ -4,7 +4,6 @@
 [submodule "dreamgaussian"]
 	path = dreamgaussian
 	url = https://github.com/dreamgaussian/dreamgaussian
-	
 [submodule "MVDream-threestudio"]
 	path = MVDream-threestudio
 	url = https://github.com/Dimensify/MVDream-threestudio

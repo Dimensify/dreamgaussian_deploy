@@ -9,3 +9,4 @@ output/
 *.gif
 *.csv
 port_status.csv
+diff-gaussian-rasterization/
