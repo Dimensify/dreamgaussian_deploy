@@ -50,7 +50,8 @@ def get_server_port():
     for i,arg in enumerate(sys.argv):
         if arg.startswith("--port"):
             return sys.argv[i+1]
-    return None
+    return '8000'
+
 
 def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     '''

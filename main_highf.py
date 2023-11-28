@@ -10,6 +10,8 @@ import pandas as pd
 from datetime import datetime
 import uvicorn
 import sys 
+from moviepy.editor import VideoFileClip
+from glob import glob
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -34,6 +36,56 @@ OUTPUT_DIR = "./output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 ### UTILITIES ###
+def make_gif(input_path,output_path):
+    '''
+    Converts the video to GIF
+
+    Parameters
+    ----------
+    input_path: str
+        Path to the input video
+    output_path: str
+        Path to the output GIF
+
+    Returns
+    -------
+    str:
+        Path to the output GIF
+    '''
+
+    input_video_path = input_path
+    output_gif_path = output_path
+
+    # Load the video
+    video_clip = VideoFileClip(input_video_path)
+
+    # Set the frame rate for the GIF (adjust as needed)
+    frame_rate = 10
+
+    # Resize the video to a smaller size (adjust as needed)
+    target_width = 320
+    target_height = 280
+    video_clip = video_clip.resize((target_width, target_height))
+
+    # Create a list to store GIF frames
+    gif_frames = []
+
+    # Generate GIF frames
+    for frame in video_clip.iter_frames(fps=frame_rate, dtype='uint8'):
+        gif_frames.append(Image.fromarray(frame))
+
+    # Save the GIF using Pillow
+    gif_frames[0].save(
+        output_gif_path,
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=1000 / frame_rate,
+        loop=0  # 0 means loop indefinitely
+    )
+
+    # Return the processed image path
+    return output_gif_path
+
 def get_server_port():
     '''
     Returns the port number of the server
@@ -50,37 +102,7 @@ def get_server_port():
     for i,arg in enumerate(sys.argv):
         if arg.startswith("--port"):
             return sys.argv[i+1]
-    return None
-
-def make_gif_loop_infinitely(input_gif_path, output_gif_path):
-    '''
-    Modifies the loop flag of a GIF file to make it loop infinitely
-
-    Parameters
-    ----------
-    input_gif_path: str
-        Path to the input GIF file
-    output_gif_path: str    
-        Path to the output GIF file
-
-    Returns
-    -------
-    None
-    '''
-    # Open the GIF file
-    gif = Image.open(input_gif_path)
-
-    frames = []
-    for frame in ImageSequence.Iterator(gif):
-        frames.append(frame.copy())
-
-    # Modify the loop flag to make the GIF loop infinitely
-    if len(frames) > 1:
-        # Setting the loop flag to 0 will make the GIF loop indefinitely
-        frames[0].info['loop'] = 0
-
-    # Save the modified frames as a new GIF file
-    frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
+    return '8000'
 
 def convert_and_pack_results(name):
     '''
@@ -100,7 +122,7 @@ def convert_and_pack_results(name):
     # Coverting to gif
     os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
     # Make the GIF loop infinitely
-    make_gif_loop_infinitely(f'output/{name}.gif', f'output/{name}.gif')
+    # make_gif_loop_infinitely(f'output/{name}.gif', f'output/{name}.gif')
 
     ## Move png, mtl and obj file to a new folder name
     os.makedirs(f'logs/{name}', exist_ok=True)
@@ -128,40 +150,41 @@ def convert_and_pack_results(name):
 
     return json
 
+## TO BE EDITED WITH MAGIC 3D
 
-def process_image(input_file: UploadFile):
-    '''
-    Processes the uploaded image and converts to 3D
+# def process_image(input_file: UploadFile):
+#     '''
+#     Processes the uploaded image and converts to 3D
 
-    Parameters
-    ----------
-    input_file: UploadFile  
-        Uploaded image file
+#     Parameters
+#     ----------
+#     input_file: UploadFile  
+#         Uploaded image file
 
-    Returns
-    -------
-    json: dict
-        Dictionary containing the paths to the GIF and ZIP files
-    '''
+#     Returns
+#     -------
+#     json: dict
+#         Dictionary containing the paths to the GIF and ZIP files
+#     '''
 
-    # Define the output file name without extension
-    name = os.path.splitext(input_file.filename)[0]
+#     # Define the output file name without extension
+#     name = os.path.splitext(input_file.filename)[0]
     
-    # Save the uploaded image
-    input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
-    with open(input_file_path, "wb") as f:
-        shutil.copyfileobj(input_file.file, f)
+#     # Save the uploaded image
+#     input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
+#     with open(input_file_path, "wb") as f:
+#         shutil.copyfileobj(input_file.file, f)
 
-    # Define the processed image file path
-    processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
+#     # Define the processed image file path
+#     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
-    # Call the Python scripts using subprocess
-    subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+#     # Call the Python scripts using subprocess
+#     subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+#     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+#     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
-    # Return the json
-    return convert_and_pack_results(name)
+#     # Return the json
+#     return convert_and_pack_results(name)
 
 # Function to process text using process_text.py
 def process_text(input_text):
@@ -180,14 +203,24 @@ def process_text(input_text):
     '''
 
     ## Remove all special characters from the save path
-    save_path = "".join(e for e in input_text if e.isalnum()).lower()
-    # Replace this with the actual command to process the text
-    # For example, you can use subprocess to run your Python script
-    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
-    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
+    directory_name = input_text.replace(" ", "_")
+    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/" + directory_name
+
+    # Running the generation model
+    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    # Get the path of the mp4 file
+    mp4_path = glob(logs_path + "/save/*.mp4")[0]
+    # Define the output GIF file path and convert the mp4 to gif
+    gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
+    make_gif(mp4_path, gif_path)
+
+    ## Remove the logs folder
+    shutil.rmtree(logs_path)
 
     # Return the json
-    return convert_and_pack_results(save_path)
+    json = {"gif_path": gif_path, "zip_path": None}
+
+    return json
 
 def add_to_port_status(port,api):
     '''
@@ -245,35 +278,35 @@ async def dummyMethod(text:str = Form(...)):
 
 
 # Route to handle image uploads
-@app.post("/upload-image-swagger/")
-async def process_image_endpoint_swagger(image: UploadFile):
-    '''
-    Processes the uploaded image and converts to 3D to render on Swagger UI
+# @app.post("/upload-image-swagger/")
+# async def process_image_endpoint_swagger(image: UploadFile):
+#     '''
+#     Processes the uploaded image and converts to 3D to render on Swagger UI
 
-    Parameters
-    ----------
-    image: UploadFile
-        Uploaded image file
+#     Parameters
+#     ----------
+#     image: UploadFile
+#         Uploaded image file
 
-    Returns
-    ------- 
-    FileResponse:
-        Returns the processed GIF file and renders it directly on Swagger UI
-    '''
-    port = get_server_port()
-    # Process the image
-    try:
-        # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-swagger')
-        path = process_image(image)        
-        # Remove log from port_status.csv
-        remove_from_port_status(port)
-        return FileResponse(path['gif_path'], media_type='image/gif')
+#     Returns
+#     ------- 
+#     FileResponse:
+#         Returns the processed GIF file and renders it directly on Swagger UI
+#     '''
+#     port = get_server_port()
+#     # Process the image
+#     try:
+#         # Add log to port_status.csv
+#         add_to_port_status(port, 'upload-image-swagger')
+#         path = process_image(image)        
+#         # Remove log from port_status.csv
+#         remove_from_port_status(port)
+#         return FileResponse(path['gif_path'], media_type='image/gif')
 
-    except Exception as e:
-        # Remove log from port_status.csv
-        remove_from_port_status(port)
-        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+#     except Exception as e:
+#         # Remove log from port_status.csv
+#         remove_from_port_status(port)
+#         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
 # Route to handle text inputs
@@ -310,165 +343,165 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-@app.post("/upload-image-json/")
-async def process_image_endpoint_json(image: UploadFile):
-    '''
-    Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
+# @app.post("/upload-image-json/")
+# async def process_image_endpoint_json(image: UploadFile):
+#     '''
+#     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
-    Parameters
-    ----------
-    image: UploadFile
-        Uploaded image file
+#     Parameters
+#     ----------
+#     image: UploadFile
+#         Uploaded image file
 
-    Returns
-    -------
-    json: dict
-        Dictionary containing the paths to the GIF and ZIP files
-    '''
-    port = get_server_port()
-    try:
-        # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-json')
-        # Process the image
-        path = process_image(image)
-        # Remove log from port_status.csv
-        remove_from_port_status(port)
-        # Return the file paths in json format
-        return path
+#     Returns
+#     -------
+#     json: dict
+#         Dictionary containing the paths to the GIF and ZIP files
+#     '''
+#     port = get_server_port()
+#     try:
+#         # Add log to port_status.csv
+#         add_to_port_status(port, 'upload-image-json')
+#         # Process the image
+#         path = process_image(image)
+#         # Remove log from port_status.csv
+#         remove_from_port_status(port)
+#         # Return the file paths in json format
+#         return path
 
-    except Exception as e:
-        # Remove log from port_status.csv
-        remove_from_port_status(port)
-        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+#     except Exception as e:
+#         # Remove log from port_status.csv
+#         remove_from_port_status(port)
+#         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
-# Route to handle text inputs
-@app.post("/process-text-json/")
-async def process_text_endpoint_json(text: str = Form(...)):
-    '''
-    Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
+# # Route to handle text inputs
+# @app.post("/process-text-json/")
+# async def process_text_endpoint_json(text: str = Form(...)):
+#     '''
+#     Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
-    Parameters
-    ----------
-    text: str
-        Text to be processed
+#     Parameters
+#     ----------
+#     text: str
+#         Text to be processed
 
-    Returns
-    -------
-    json: dict
-        Dictionary containing the paths to the GIF and ZIP files
-    '''
-    port = get_server_port()
-    try:
-        # Add log to port_status.csv
-        add_to_port_status(port, 'process-text-json')
-        # Process the text
-        path = process_text(text)
-        # Remove log from port_status.csv
-        remove_from_port_status(port)
-        # Return the file paths in json format
-        return path
+#     Returns
+#     -------
+#     json: dict
+#         Dictionary containing the paths to the GIF and ZIP files
+#     '''
+#     port = get_server_port()
+#     try:
+#         # Add log to port_status.csv
+#         add_to_port_status(port, 'process-text-json')
+#         # Process the text
+#         path = process_text(text)
+#         # Remove log from port_status.csv
+#         remove_from_port_status(port)
+#         # Return the file paths in json format
+#         return path
     
-    except Exception as e:
-        # Remove log from port_status.csv
-        remove_from_port_status(port)
-        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+#     except Exception as e:
+#         # Remove log from port_status.csv
+#         remove_from_port_status(port)
+#         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
-@app.post("/get-zip/")
-async def get_zip(file_path: str = Form(...)):
-    '''
-    Returns the ZIP file
+# @app.post("/get-zip/")
+# async def get_zip(file_path: str = Form(...)):
+#     '''
+#     Returns the ZIP file
 
-    Parameters
-    ----------
-    file_path: str
-        Path to the ZIP file
+#     Parameters
+#     ----------
+#     file_path: str
+#         Path to the ZIP file
 
-    Returns
-    -------
-    FileResponse:
-        Returns the ZIP file in octet-stream format
-    '''
+#     Returns
+#     -------
+#     FileResponse:
+#         Returns the ZIP file in octet-stream format
+#     '''
     
-    # Getting the file name
-    file_name = file_path.split('/')[-1]
+#     # Getting the file name
+#     file_name = file_path.split('/')[-1]
 
-    ## Check if the file extension is zip with assert
-    if not file_name.endswith('.zip'):
-        raise HTTPException(status_code=400, detail="File extension is not zip")
+#     ## Check if the file extension is zip with assert
+#     if not file_name.endswith('.zip'):
+#         raise HTTPException(status_code=400, detail="File extension is not zip")
     
-    # Define the output GIF file path
-    try:
-        # Return the processed GIF
-        return FileResponse(file_path, media_type='application/octet-stream', filename=file_name)
+#     # Define the output GIF file path
+#     try:
+#         # Return the processed GIF
+#         return FileResponse(file_path, media_type='application/octet-stream', filename=file_name)
     
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
 
-@app.post("/render-gif-swagger/")
-async def render_gif(file_path: str = Form(...)):
-    """
-    Returns the GIF file
+# @app.post("/render-gif-swagger/")
+# async def render_gif(file_path: str = Form(...)):
+#     """
+#     Returns the GIF file
 
-    Parameters
-    ----------
-    file_path: str
-        Path to the GIF file
+#     Parameters
+#     ----------
+#     file_path: str
+#         Path to the GIF file
 
-    Returns
-    -------
-    FileResponse:
-        Returns the GIF file in image/gif format
-    """
+#     Returns
+#     -------
+#     FileResponse:
+#         Returns the GIF file in image/gif format
+#     """
 
-    # Getting the file name
-    file_name = file_path.split("/")[-1]
+#     # Getting the file name
+#     file_name = file_path.split("/")[-1]
 
-    ## Check if the file extension is gif with assert
-    if not file_name.endswith(".gif"):
-        raise HTTPException(status_code=400, detail="File extension is not gif")
+#     ## Check if the file extension is gif with assert
+#     if not file_name.endswith(".gif"):
+#         raise HTTPException(status_code=400, detail="File extension is not gif")
 
-    # Define the output GIF file path
-    try:
-        # Return the processed GIF
-        return FileResponse(file_path, media_type="image/gif")
+#     # Define the output GIF file path
+#     try:
+#         # Return the processed GIF
+#         return FileResponse(file_path, media_type="image/gif")
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
     
     
 
-@app.post("/render-gif/")
-async def render_gif(file_path: str = Form(...)):
-    '''
-    Returns the GIF file
+# @app.post("/render-gif/")
+# async def render_gif(file_path: str = Form(...)):
+#     '''
+#     Returns the GIF file
 
-    Parameters
-    ----------
-    file_path: str
-        Path to the GIF file
+#     Parameters
+#     ----------
+#     file_path: str
+#         Path to the GIF file
 
-    Returns
-    -------
-    FileResponse:
-        Returns the GIF file in image/gif format
-    '''
+#     Returns
+#     -------
+#     FileResponse:
+#         Returns the GIF file in image/gif format
+#     '''
 
-    # Getting the file name
-    file_name = file_path.split('/')[-1]
+#     # Getting the file name
+#     file_name = file_path.split('/')[-1]
 
-    ## Check if the file extension is gif with assert
-    if not file_name.endswith('.gif'):
-        raise HTTPException(status_code=400, detail="File extension is not gif")
+#     ## Check if the file extension is gif with assert
+#     if not file_name.endswith('.gif'):
+#         raise HTTPException(status_code=400, detail="File extension is not gif")
 
-    # Define the output GIF file path
-    try:
-        # Return the processed GIF
-        return FileResponse(file_path, media_type='image/gif', filename=file_name)
+#     # Define the output GIF file path
+#     try:
+#         # Return the processed GIF
+#         return FileResponse(file_path, media_type='image/gif', filename=file_name)
  
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=config.port)
