@@ -277,6 +277,23 @@ async def dummyMethod(text:str = Form(...)):
         raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
 
 
+@app.post("/delete_intermediate_files/")
+async def deleteIntermediateFiles(path:str):
+    # Get a list of all files in the folder
+    files = os.listdir(path)
+
+    # Iterate through each file
+    for file in files:
+        # Check if the file is a GIF or image (you can extend this list as needed)
+        if file.lower().endswith(('.gif', '.png', '.jpg', '.jpeg')):
+            file_path = os.path.join(path, file)
+            try:
+                # Delete the file
+                os.remove(file_path)
+                print(f"Deleted: {file_path}")
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
+
 # Route to handle image uploads
 # @app.post("/upload-image-swagger/")
 # async def process_image_endpoint_swagger(image: UploadFile):
