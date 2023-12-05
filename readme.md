@@ -32,7 +32,7 @@ pip install git+https://github.com/NVlabs/nvdiffrast/
 pip install git+https://github.com/ashawkey/kiuikit
 ```
 
-Install all the dependencies, and to spin the backend API use ```uvicorn main:app --reload  ``` 
+Install all the dependencies, and to spin the backend API use ```uvicorn main:app --reload  ``` or for specific port ``` uvicorn 'main:app' --host=0.0.0.0 --port=8000 ```
 
 Go to ```http://127.0.0.1:8000/docs``` goto Upload Image POST, select 'Try it out' and browse and upload the image. 
 The expected response is the gif path of the 3D generation
