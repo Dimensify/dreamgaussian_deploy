@@ -260,11 +260,11 @@ async def process_image_endpoint_swagger(image: UploadFile):
     FileResponse:
         Returns the processed GIF file and renders it directly on Swagger UI
     '''
-    port = get_server_port()
+    #port = get_server_port()
     # Process the image
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-swagger')
+        #add_to_port_status(port, 'upload-image-swagger')
         path = process_image(image)        
         # Remove log from port_status.csv
         remove_from_port_status(port)
@@ -294,10 +294,10 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
     '''
 
     # Define the output GIF file path
-    port = get_server_port()
+    #port = get_server_port()
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'process-text-swagger')
+       # add_to_port_status(port, 'process-text-swagger')
         # Process the text
         path = process_text(text)
         # Remove log from port_status.csv
