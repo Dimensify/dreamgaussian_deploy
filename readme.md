@@ -29,6 +29,10 @@ git checkout deploy
 git submodule update --recursive --init
 ```
 
+## Alternatively for specific module use : 
+
+```git submodule update --init dreamgaussian```
+
 ```bash
 pip install -r requirements.txt
 
