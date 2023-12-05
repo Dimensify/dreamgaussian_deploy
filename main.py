@@ -267,12 +267,12 @@ async def process_image_endpoint_swagger(image: UploadFile):
         #add_to_port_status(port, 'upload-image-swagger')
         path = process_image(image)        
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        #remove_from_port_status(port)
         return FileResponse(path['gif_path'], media_type='image/gif')
 
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        #remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
@@ -301,13 +301,13 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # Process the text
         path = process_text(text)
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        #remove_from_port_status(port)
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        #remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 @app.post("/upload-image-json/")
