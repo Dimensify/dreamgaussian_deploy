@@ -26,7 +26,7 @@ To clone the repository:
 git clone https://github.com/Dimensify/dreamgaussian_deploy/
 cd dreamgaussian_deploy
 git checkout deploy
-git submodule update --recursive --init
+git submodule update --recursive --init --remote
 ```
 
 ## Alternatively for specific module use : 
