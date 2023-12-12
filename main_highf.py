@@ -294,6 +294,8 @@ async def deleteIntermediateFiles(path:str):
             except Exception as e:
                 print(f"Error deleting {file_path}: {e}")
 
+# Export the obj files
+
 # Route to handle image uploads
 # @app.post("/upload-image-swagger/")
 # async def process_image_endpoint_swagger(image: UploadFile):
