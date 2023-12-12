@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException, send_file
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -265,6 +265,32 @@ def remove_from_port_status(port):
     ## Save the csv file
     port_status.to_csv('port_status.csv', index=False)
 
+def pack_results(folder_path):
+    '''
+    packs the results into a zip file
+
+    Parameters
+    ----------
+    folder_path: str
+        path of the folder 
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to ZIP files
+    '''
+    zip_path = f'{folder_path}/results'
+
+    # Saving the texture.jpg, model.mtl and model.obj files into a zip file
+    os.makedirs(zip_path, exist_ok=True)
+    shutil.make_archive(zip_path, 'zip', folder_path)
+    
+    # Add gif path and zip path to a json format
+    json = {"zip_path": f'{folder_path}/results.zip'}
+
+    return json
+
+
 ### API ### 
 
 @app.post("/dummy_method/")
@@ -278,7 +304,7 @@ async def dummyMethod(text:str = Form(...)):
 
 
 @app.post("/delete_intermediate_files/")
-async def deleteIntermediateFiles(path:str):
+async def deleteIntermediateFiles(path: str = Form(...)):
     # Get a list of all files in the folder
     files = os.listdir(path)
 
@@ -295,6 +321,12 @@ async def deleteIntermediateFiles(path:str):
                 print(f"Error deleting {file_path}: {e}")
 
 # Export the obj files
+@app.route('/download_zip/')
+def download_zip(zip_file_path: str = Form(...)):
+    """
+    API endpoint to download a zip file for a given zip_file_path.
+    """
+    return send_file(zip_file_path, as_attachment=True)
 
 # Route to handle image uploads
 # @app.post("/upload-image-swagger/")
