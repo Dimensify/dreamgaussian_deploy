@@ -220,7 +220,8 @@ def process_text(input_text):
     send_file(zip_path, as_attachment=True)
 
     ## Remove the logs folder
-    shutil.rmtree(logs_path)
+    # shutil.rmtree(logs_path)
+    deleteIntermediateFiles(path=logs_path)
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
