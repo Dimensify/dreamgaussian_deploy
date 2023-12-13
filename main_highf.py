@@ -214,11 +214,17 @@ def process_text(input_text):
     gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
     make_gif(mp4_path, gif_path)
 
+    zip_json = pack_results(input_text)
+    zip_path  = zip_json["zip_path"]
+
+    send_file(zip_path, as_attachment=True)
+
     ## Remove the logs folder
     shutil.rmtree(logs_path)
 
     # Return the json
-    json = {"gif_path": gif_path, "zip_path": None}
+    # json = {"gif_path": gif_path, "zip_path": None}
+    json = {"gif_path": gif_path, "zip_path": zip_path}
 
     return json
 
@@ -265,28 +271,33 @@ def remove_from_port_status(port):
     ## Save the csv file
     port_status.to_csv('port_status.csv', index=False)
 
-def pack_results(folder_path):
+def pack_results(input_text):
     '''
     packs the results into a zip file
 
     Parameters
     ----------
-    folder_path: str
-        path of the folder 
+    input_text: str
+        input prompt text
 
     Returns
     -------
     json: dict
         Dictionary containing the paths to ZIP files
     '''
-    zip_path = f'{folder_path}/results'
+    ## Remove all special characters from the save path
+    directory_name = input_text.replace(" ", "_")
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/{directory_name}/save/it10000-export/" 
+    # zip_path = f'{folder_path}/results'
+    # zip_path = f'{folder_path}{directory_name}'
+    zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}.zip")
 
     # Saving the texture.jpg, model.mtl and model.obj files into a zip file
     os.makedirs(zip_path, exist_ok=True)
     shutil.make_archive(zip_path, 'zip', folder_path)
     
-    # Add gif path and zip path to a json format
-    json = {"zip_path": f'{folder_path}/results.zip'}
+    # Add zip path to a json format
+    json = {"zip_path": zip_path}
 
     return json
 
@@ -303,8 +314,9 @@ async def dummyMethod(text:str = Form(...)):
         raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
 
 
-@app.post("/delete_intermediate_files/")
-async def deleteIntermediateFiles(path: str = Form(...)):
+# @app.post("/delete_intermediate_files/")
+# async 
+def deleteIntermediateFiles(path: str = Form(...)):
     # Get a list of all files in the folder
     files = os.listdir(path)
 
