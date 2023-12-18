@@ -204,10 +204,10 @@ def process_text(input_text):
 
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/" + directory_name
+    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name
 
     # Running the generation model
-    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
     # Get the path of the mp4 file
     mp4_path = glob(logs_path + "/save/*.mp4")[0]
     # Define the output GIF file path and convert the mp4 to gif
@@ -215,7 +215,7 @@ def process_text(input_text):
     make_gif(mp4_path, gif_path)
 
     # Running the export model
-    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21.yaml", "--export", "--gpu", "0", 
+    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
                     "resume=" + logs_path + "ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
