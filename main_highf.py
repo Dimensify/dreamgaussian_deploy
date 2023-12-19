@@ -426,6 +426,7 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # return FileResponse(path['gif_path'], media_type='image/gif')
 
         zip_path = path["zip_path"]
+        print("The zip path is...: ",zip_path)
         # Create a Path object for validation
         download_path = Path(zip_path)
         
@@ -434,7 +435,7 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
             return {"error": "Download file not found"}
         print("The zip path is: ",zip_path)
         # Return the FileResponse with the file path and name
-        return FileResponse(zip_path, media_type="application/x-zip-compressed", filename=download_path.name)
+        return FileResponse(zip_path, media_type="application/octet-stream", filename=download_path.name)
 
     
     except Exception as e:
