@@ -204,7 +204,7 @@ def process_text(input_text):
 
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name
+    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/" + directory_name
 
     # Running the generation model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
@@ -295,7 +295,7 @@ def pack_results(input_text):
     '''
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/{directory_name}/save/it10000-export/" 
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/{directory_name}/save/it100-export/" 
     # zip_path = f'{folder_path}/results'
     # zip_path = f'{folder_path}{directory_name}'
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}.zip")
