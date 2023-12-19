@@ -298,7 +298,7 @@ def pack_results(input_text):
     '''
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it300-export/" 
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it500-export/" 
     # zip_path = f'{folder_path}/results'
     # zip_path = f'{folder_path}{directory_name}'
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
@@ -335,7 +335,7 @@ def deleteIntermediateFiles(path: str = Form(...)):
     for file in files:
         print("Deleting each file..")
         # Check if the file is a GIF or image (you can extend this list as needed)
-        if file.lower().endswith(('.gif', '.png', '.jpg', '.jpeg')):
+        if file.lower().endswith(('.mp4', '.png', '.jpg', '.jpeg')):
             file_path = os.path.join(path, file)
             try:
                 # Delete the file
