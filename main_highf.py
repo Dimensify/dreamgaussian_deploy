@@ -432,9 +432,9 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # Check if the file exists
         if not download_path.is_file():
             return {"error": "Download file not found"}
-        
+        print("The zip path is: ",zip_path)
         # Return the FileResponse with the file path and name
-        return FileResponse(zip_path, filename=download_path.name)
+        return FileResponse(zip_path, media_type="application/x-zip-compressed", filename=download_path.name)
 
     
     except Exception as e:
