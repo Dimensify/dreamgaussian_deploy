@@ -207,15 +207,15 @@ def process_text(input_text):
     directory_name = input_text.replace(" ", "_")
     logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name
 
-    print("The training has started..........")
-    # Running the generation model
-    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
-    # Get the path of the mp4 file
-    mp4_path = glob(logs_path + "/save/*.mp4")[0]
-    # Define the output GIF file path and convert the mp4 to gif
+    # print("The training has started..........")
+    # # Running the generation model
+    # subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    # # Get the path of the mp4 file
+    # mp4_path = glob(logs_path + "/save/*.mp4")[0]
+    # # Define the output GIF file path and convert the mp4 to gif
     gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
-    make_gif(mp4_path, gif_path)
-    print("Gif and mp4 created......")
+    # make_gif(mp4_path, gif_path)
+    # print("Gif and mp4 created......")
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
