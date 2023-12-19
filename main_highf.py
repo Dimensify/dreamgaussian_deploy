@@ -205,7 +205,7 @@ def process_text(input_text):
 
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/" + directory_name
+    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name
 
     print("The training has started..........")
     # Running the generation model
@@ -215,6 +215,7 @@ def process_text(input_text):
     # Define the output GIF file path and convert the mp4 to gif
     gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
     make_gif(mp4_path, gif_path)
+    print("Gif and mp4 created......")
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
@@ -222,13 +223,15 @@ def process_text(input_text):
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
-
+    print("Export Done.....")
     zip_json = pack_results(input_text)
     zip_path  = zip_json["zip_path"]
+    print("Results packed.......")
 
     ## Remove the logs folder
     # shutil.rmtree(logs_path)
     deleteIntermediateFiles(path=logs_path)
+    print("Deleted intermediatory files......")
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
@@ -295,7 +298,7 @@ def pack_results(input_text):
     '''
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/{directory_name}/save/it100-export/" 
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it100-export/" 
     # zip_path = f'{folder_path}/results'
     # zip_path = f'{folder_path}{directory_name}'
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}.zip")
