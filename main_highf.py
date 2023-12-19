@@ -298,7 +298,7 @@ def pack_results(input_text):
     '''
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it100-export/" 
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it300-export/" 
     # zip_path = f'{folder_path}/results'
     # zip_path = f'{folder_path}{directory_name}'
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
