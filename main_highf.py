@@ -206,6 +206,7 @@ def process_text(input_text):
     directory_name = input_text.replace(" ", "_")
     logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/" + directory_name
 
+    print("The training is started..........")
     # Running the generation model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
     # Get the path of the mp4 file
