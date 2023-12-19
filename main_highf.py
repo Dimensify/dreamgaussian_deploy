@@ -219,7 +219,7 @@ def process_text(input_text):
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
-                    "resume=" + logs_path + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+                    "resume=" + "/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
@@ -330,9 +330,10 @@ async def dummyMethod(text:str = Form(...)):
 def deleteIntermediateFiles(path: str = Form(...)):
     # Get a list of all files in the folder
     files = os.listdir(path)
-
+    print("Deleting files starting!!")
     # Iterate through each file
     for file in files:
+        print("Deleting each file..")
         # Check if the file is a GIF or image (you can extend this list as needed)
         if file.lower().endswith(('.gif', '.png', '.jpg', '.jpeg')):
             file_path = os.path.join(path, file)
