@@ -327,22 +327,58 @@ async def dummyMethod(text:str = Form(...)):
 
 # @app.post("/delete_intermediate_files/")
 # async 
+# def deleteIntermediateFiles(path: str = Form(...)):
+#     # Get a list of all files in the folder
+#     files = os.listdir(path)
+#     print("Deleting files starting!!")
+#     # Iterate through each file
+#     for file in files:
+#         print("Deleting each file..")
+#         # Check if the file is a GIF or image (you can extend this list as needed)
+#         if file.lower().endswith(('.mp4', '.png', '.jpg', '.jpeg')):
+#             file_path = os.path.join(path, file)
+#             try:
+#                 # Delete the file
+#                 os.remove(file_path)
+#                 print(f"Deleted: {file_path}")
+#             except Exception as e:
+#                 print(f"Error deleting {file_path}: {e}")
+
 def deleteIntermediateFiles(path: str = Form(...)):
-    # Get a list of all files in the folder
-    files = os.listdir(path)
-    print("Deleting files starting!!")
-    # Iterate through each file
-    for file in files:
-        print("Deleting each file..")
-        # Check if the file is a GIF or image (you can extend this list as needed)
-        if file.lower().endswith(('.mp4', '.png', '.jpg', '.jpeg')):
-            file_path = os.path.join(path, file)
+    # Get a list of all files and subdirectories in the folder
+    files_and_folders = os.listdir(path)
+
+    # Iterate through each file or folder
+    for item in files_and_folders:
+        print("Deleting each file or folder..")
+        item_path = os.path.join(path, item)
+
+        # Check if it is a file with the specified extensions
+        if os.path.isfile(item_path) and item.lower().endswith(('.mp4', '.png', '.jpg', '.jpeg')):
             try:
                 # Delete the file
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
+                os.remove(item_path)
             except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
+                print(f"Error deleting file {item_path}: {e}")
+
+        # Check if it is a folder ending with "test"
+        elif os.path.isdir(item_path) and item.lower().endswith('test'):
+            try:
+                # Delete the folder and its contents
+                for root, dirs, files in os.walk(item_path, topdown=False):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        os.remove(file_path)
+
+                    for dir in dirs:
+                        dir_path = os.path.join(root, dir)
+                        os.rmdir(dir_path)
+
+                # Finally, remove the main folder
+                os.rmdir(item_path)
+
+            except Exception as e:
+                print(f"Error deleting folder {item_path}: {e}")
 
 # Export the obj files
 @app.route('/download_zip/')
@@ -426,17 +462,13 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # return FileResponse(path['gif_path'], media_type='image/gif')
 
         zip_path = path["zip_path"]
-        print("The zip path is...: ",zip_path)
-        # Get the absolute path
-        absolute_path = os.path.abspath(zip_path)
-        print("THe full path is: ", absolute_path)
         # Create a Path object for validation
         download_path = Path(zip_path)
         
         # Check if the file exists
         if not download_path.is_file():
             return {"error": "Download file not found"}
-        print("The zip path is: ",zip_path)
+        
         # Return the FileResponse with the file path and name
         return FileResponse(zip_path, media_type="application/octet-stream", filename=download_path.name)
 
