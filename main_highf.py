@@ -230,7 +230,7 @@ def process_text(input_text):
 
     ## Remove the logs folder
     # shutil.rmtree(logs_path)
-    deleteIntermediateFiles(path=logs_path)
+    deleteIntermediateFiles(path=logs_path+"/save/")
     print("Deleted intermediatory files......")
 
     # Return the json
@@ -304,7 +304,7 @@ def pack_results(input_text):
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
 
     # Saving the texture.jpg, model.mtl and model.obj files into a zip file
-    os.makedirs(zip_path, exist_ok=True)
+    # os.makedirs(zip_path, exist_ok=True)
     shutil.make_archive(zip_path, 'zip', folder_path)
     
     # Add zip path to a json format
