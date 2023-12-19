@@ -219,7 +219,7 @@ def process_text(input_text):
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
-                    "resume=" + "/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+                    "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
@@ -301,7 +301,7 @@ def pack_results(input_text):
     folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it100-export/" 
     # zip_path = f'{folder_path}/results'
     # zip_path = f'{folder_path}{directory_name}'
-    zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}.zip")
+    zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
 
     # Saving the texture.jpg, model.mtl and model.obj files into a zip file
     os.makedirs(zip_path, exist_ok=True)
