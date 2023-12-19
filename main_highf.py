@@ -308,7 +308,7 @@ def pack_results(input_text):
     shutil.make_archive(zip_path, 'zip', folder_path)
     
     # Add zip path to a json format
-    json = {"zip_path": zip_path}
+    json = {"zip_path": zip_path+".zip"}
 
     return json
 
