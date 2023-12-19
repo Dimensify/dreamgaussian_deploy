@@ -427,6 +427,9 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
 
         zip_path = path["zip_path"]
         print("The zip path is...: ",zip_path)
+        # Get the absolute path
+        absolute_path = os.path.abspath(zip_path)
+        print("THe full path is: ", absolute_path)
         # Create a Path object for validation
         download_path = Path(zip_path)
         
