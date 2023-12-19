@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException, send_file
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -12,6 +12,7 @@ import uvicorn
 import sys 
 from moviepy.editor import VideoFileClip
 from glob import glob
+from pathlib import Path
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -206,7 +207,7 @@ def process_text(input_text):
     directory_name = input_text.replace(" ", "_")
     logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5/" + directory_name
 
-    print("The training is started..........")
+    print("The training has started..........")
     # Running the generation model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
     # Get the path of the mp4 file
@@ -224,8 +225,6 @@ def process_text(input_text):
 
     zip_json = pack_results(input_text)
     zip_path  = zip_json["zip_path"]
-
-    send_file(zip_path, as_attachment=True)
 
     ## Remove the logs folder
     # shutil.rmtree(logs_path)
@@ -347,7 +346,19 @@ def download_zip(zip_file_path: str = Form(...)):
     """
     API endpoint to download a zip file for a given zip_file_path.
     """
-    return send_file(zip_file_path, as_attachment=True)
+    # return send_file(zip_file_path, as_attachment=True)
+    zip_path = zip_file_path
+    # Create a Path object for validation
+    download_path = Path(zip_path)
+    
+    # Check if the file exists
+    if not download_path.is_file():
+        return {"error": "Download file not found"}
+    
+    # Return the FileResponse with the file path and name
+    return FileResponse(zip_path, filename=download_path.name)
+
+
 
 # Route to handle image uploads
 # @app.post("/upload-image-swagger/")
@@ -408,7 +419,19 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # Remove log from port_status.csv
         remove_from_port_status(port)
         # Return the processed GIF
-        return FileResponse(path['gif_path'], media_type='image/gif')
+        # return FileResponse(path['gif_path'], media_type='image/gif')
+
+        zip_path = path["zip_path"]
+        # Create a Path object for validation
+        download_path = Path(zip_path)
+        
+        # Check if the file exists
+        if not download_path.is_file():
+            return {"error": "Download file not found"}
+        
+        # Return the FileResponse with the file path and name
+        return FileResponse(zip_path, filename=download_path.name)
+
     
     except Exception as e:
         # Remove log from port_status.csv
