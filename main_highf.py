@@ -219,7 +219,7 @@ def process_text(input_text):
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
-                    "resume=" + logs_path + "ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+                    "resume=" + logs_path + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
