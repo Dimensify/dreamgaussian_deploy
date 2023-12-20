@@ -311,7 +311,7 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-@app.post("/upload-image-json/")
+@app.post("/upload-image-lowf/")
 async def process_image_endpoint_json(image: UploadFile):
     '''
     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
@@ -343,7 +343,7 @@ async def process_image_endpoint_json(image: UploadFile):
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
 # Route to handle text inputs
-@app.post("/process-text-json/")
+@app.post("/process-text-lowf/")
 async def process_text_endpoint_json(text: str = Form(...)):
     '''
     Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
