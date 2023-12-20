@@ -654,7 +654,7 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=config.port)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port=config.port)
 
 pack_results("a running cheetah", yaml_file_path=text_to_3D_shading_yaml)
