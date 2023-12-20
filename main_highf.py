@@ -302,9 +302,12 @@ def pack_results(input_text, yaml_file_path):
         Dictionary containing the paths to ZIP files
     '''
     # Read the YAML file
+    print("Opening file")
     with open(yaml_file_path, 'r') as file:
+        print("read file")
         yaml_data = yaml.safe_load(file)
 
+    print("set max_steps")
     # Get the value of the "max_steps" variable
     max_steps_value = yaml_data.get('trainer', {}).get('max_steps')
 
@@ -653,3 +656,5 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
     
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=config.port)
+
+pack_results("a running cheetah", yaml_file_path=text_to_3D_shading_yaml)
