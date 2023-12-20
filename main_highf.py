@@ -301,6 +301,12 @@ def pack_results(input_text, yaml_file_path):
     json: dict
         Dictionary containing the paths to ZIP files
     '''
+    # Get the current working directory
+    original_directory = os.getcwd()
+
+    # Change the working directory to "MVDream"
+    os.chdir('MVDream-threestudio')
+
     # Read the YAML file
     print("Opening file")
     with open(yaml_file_path, 'r') as file:
@@ -314,12 +320,16 @@ def pack_results(input_text, yaml_file_path):
     # Print the result
     print(f"The value of max_steps is: {max_steps_value}")
 
+    # Change the working directory back to the original directory
+    os.chdir(original_directory)
+
 
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    # folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it500-export/" 
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it{max_steps_value}-export/" 
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
 
+    print("The folder path: ", folder_path)
     # # Saving the texture.jpg, model.mtl and model.obj files into a zip file
     # # os.makedirs(zip_path, exist_ok=True)
     # shutil.make_archive(zip_path, 'zip', folder_path)
