@@ -13,6 +13,7 @@ import sys
 from moviepy.editor import VideoFileClip
 from glob import glob
 from pathlib import Path
+import yaml
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -35,6 +36,10 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 ## Creating the output directory
 OUTPUT_DIR = "./output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+##Config YAML File
+text_to_3D_yaml = "../configs/mvdream-sd21.yaml"
+text_to_3D_shading_yaml = "../configs/mvdream-sd21-shading.yaml"
 
 ### UTILITIES ###
 def make_gif(input_path,output_path):
@@ -209,7 +214,7 @@ def process_text(input_text):
 
     # print("The training has started..........")
     # # Running the generation model
-    # subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    # subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
     # # Get the path of the mp4 file
     # mp4_path = glob(logs_path + "/save/*.mp4")[0]
     # # Define the output GIF file path and convert the mp4 to gif
@@ -218,20 +223,20 @@ def process_text(input_text):
     # print("Gif and mp4 created......")
 
     # Running the export model
-    subprocess.run(["python", "launch.py", "--config", "../configs/mvdream-sd21-shading.yaml", "--export", "--gpu", "0", 
-                    "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
-                    "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    # subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--export", "--gpu", "0", 
+    #                 "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+    #                 "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
+    #                 "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
+    # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
-    zip_json = pack_results(input_text)
+    zip_json = pack_results(input_text,yaml_file_path=text_to_3D_shading_yaml)
     zip_path  = zip_json["zip_path"]
     print("Results packed.......")
 
-    ## Remove the logs folder
-    # shutil.rmtree(logs_path)
-    deleteIntermediateFiles(path=logs_path+"/save/")
-    print("Deleted intermediatory files......")
+    ## Remove the intermediatory files
+    # deleteIntermediateFiles(path=logs_path+"/save/")
+    # print("Deleted intermediatory files......")
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
@@ -282,7 +287,7 @@ def remove_from_port_status(port):
     ## Save the csv file
     port_status.to_csv('port_status.csv', index=False)
 
-def pack_results(input_text):
+def pack_results(input_text, yaml_file_path):
     '''
     packs the results into a zip file
 
@@ -296,16 +301,25 @@ def pack_results(input_text):
     json: dict
         Dictionary containing the paths to ZIP files
     '''
+    # Read the YAML file
+    with open(yaml_file_path, 'r') as file:
+        yaml_data = yaml.safe_load(file)
+
+    # Get the value of the "max_steps" variable
+    max_steps_value = yaml_data.get('trainer', {}).get('max_steps')
+
+    # Print the result
+    print(f"The value of max_steps is: {max_steps_value}")
+
+
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it500-export/" 
-    # zip_path = f'{folder_path}/results'
-    # zip_path = f'{folder_path}{directory_name}'
+    # folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it500-export/" 
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
 
-    # Saving the texture.jpg, model.mtl and model.obj files into a zip file
-    # os.makedirs(zip_path, exist_ok=True)
-    shutil.make_archive(zip_path, 'zip', folder_path)
+    # # Saving the texture.jpg, model.mtl and model.obj files into a zip file
+    # # os.makedirs(zip_path, exist_ok=True)
+    # shutil.make_archive(zip_path, 'zip', folder_path)
     
     # Add zip path to a json format
     json = {"zip_path": zip_path+".zip"}
@@ -350,7 +364,6 @@ def deleteIntermediateFiles(path: str = Form(...)):
 
     # Iterate through each file or folder
     for item in files_and_folders:
-        print("Deleting each file or folder..")
         item_path = os.path.join(path, item)
 
         # Check if it is a file with the specified extensions
@@ -362,9 +375,7 @@ def deleteIntermediateFiles(path: str = Form(...)):
                 print(f"Error deleting file {item_path}: {e}")
 
         # Check if it is a folder ending with "test"
-        print("Checking ends with test")
-        if os.path.isdir(item_path) and item.lower().endswith('test'):
-            print("Directory ends with test")
+        if os.path.isdir(item_path) and item.lower().endswith('test'):            
             try:
                 # Delete the folder and its contents
                 for root, dirs, files in os.walk(item_path, topdown=False):
