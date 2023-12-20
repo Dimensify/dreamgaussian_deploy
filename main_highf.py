@@ -212,21 +212,21 @@ def process_text(input_text):
     directory_name = input_text.replace(" ", "_")
     logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name
 
-    # print("The training has started..........")
-    # # Running the generation model
-    # subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
-    # # Get the path of the mp4 file
-    # mp4_path = glob(logs_path + "/save/*.mp4")[0]
-    # # Define the output GIF file path and convert the mp4 to gif
+    print("The training has started..........")
+    # Running the generation model
+    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    # Get the path of the mp4 file
+    mp4_path = glob(logs_path + "/save/*.mp4")[0]
+    # Define the output GIF file path and convert the mp4 to gif
     gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
-    # make_gif(mp4_path, gif_path)
-    # print("Gif and mp4 created......")
+    make_gif(mp4_path, gif_path)
+    print("Gif and mp4 created......")
 
     # Running the export model
-    # subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--export", "--gpu", "0", 
-    #                 "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
-    #                 "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
-    #                 "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--export", "--gpu", "0", 
+                    "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
+                    "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
@@ -234,9 +234,9 @@ def process_text(input_text):
     zip_path  = zip_json["zip_path"]
     print("Results packed.......")
 
-    ## Remove the intermediatory files
-    # deleteIntermediateFiles(path=logs_path+"/save/")
-    # print("Deleted intermediatory files......")
+    # Remove the intermediatory files
+    deleteIntermediateFiles(path=logs_path+"/save/")
+    print("Deleted intermediatory files......")
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
@@ -287,19 +287,20 @@ def remove_from_port_status(port):
     ## Save the csv file
     port_status.to_csv('port_status.csv', index=False)
 
-def pack_results(input_text, yaml_file_path):
+
+def get_max_steps(yaml_file_path):
     '''
-    packs the results into a zip file
+    Get the max training steps from YAML file
 
     Parameters
     ----------
-    input_text: str
-        input prompt text
+    yaml_file_path: str
+        file path of the yaml file that is used for 3D generation
 
     Returns
     -------
-    json: dict
-        Dictionary containing the paths to ZIP files
+    max_steps_value: str
+        String containing the maximum training steps
     '''
     # Get the current working directory
     original_directory = os.getcwd()
@@ -308,31 +309,44 @@ def pack_results(input_text, yaml_file_path):
     os.chdir('MVDream-threestudio')
 
     # Read the YAML file
-    print("Opening file")
     with open(yaml_file_path, 'r') as file:
-        print("read file")
         yaml_data = yaml.safe_load(file)
 
-    print("set max_steps")
     # Get the value of the "max_steps" variable
     max_steps_value = yaml_data.get('trainer', {}).get('max_steps')
-
-    # Print the result
-    print(f"The value of max_steps is: {max_steps_value}")
 
     # Change the working directory back to the original directory
     os.chdir(original_directory)
 
+    return max_steps_value
+
+
+def pack_results(input_text, yaml_file_path):
+    '''
+    packs the results into a zip file
+
+    Parameters
+    ----------
+    input_text: str
+        input prompt text
+    yaml_file_path: str
+        file path of the yaml file that is used for 3D generation
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to ZIP files
+    '''
+    max_steps = get_max_steps(yaml_file_path)
 
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it{max_steps_value}-export/" 
+    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it{max_steps}-export/" 
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
 
-    print("The folder path: ", folder_path)
-    # # Saving the texture.jpg, model.mtl and model.obj files into a zip file
-    # # os.makedirs(zip_path, exist_ok=True)
-    # shutil.make_archive(zip_path, 'zip', folder_path)
+    # Saving the texture.jpg, model.mtl and model.obj files into a zip file
+    # os.makedirs(zip_path, exist_ok=True)
+    shutil.make_archive(zip_path, 'zip', folder_path)
     
     # Add zip path to a json format
     json = {"zip_path": zip_path+".zip"}
