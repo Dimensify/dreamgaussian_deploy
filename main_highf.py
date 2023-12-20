@@ -362,7 +362,9 @@ def deleteIntermediateFiles(path: str = Form(...)):
                 print(f"Error deleting file {item_path}: {e}")
 
         # Check if it is a folder ending with "test"
-        elif os.path.isdir(item_path) and item.lower().endswith('test'):
+        print("Checking ends with test")
+        if os.path.isdir(item_path) and item.lower().endswith('test'):
+            print("Directory ends with test")
             try:
                 # Delete the folder and its contents
                 for root, dirs, files in os.walk(item_path, topdown=False):
