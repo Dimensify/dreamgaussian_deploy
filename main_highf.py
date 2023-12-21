@@ -225,7 +225,7 @@ def process_text(input_text):
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--export", "--gpu", "0", 
                     "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=128", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
