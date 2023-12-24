@@ -30,7 +30,7 @@ transformers
 xatlas
 trimesh
 PyMCubes
-pymeshlab==2022.2.post4
+pymeshlab
 
 rembg[gpu,cli]
 # rembg[cli]>=2.0
