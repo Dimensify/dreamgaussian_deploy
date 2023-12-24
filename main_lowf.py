@@ -158,8 +158,8 @@ def process_image(input_file: UploadFile):
 
     # Call the Python scripts using subprocess
     subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Return the json
     return convert_and_pack_results(name)
