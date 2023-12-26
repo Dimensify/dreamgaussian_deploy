@@ -129,6 +129,43 @@ def convert_and_pack_results(name):
 
     return json
 
+def process_textimage(input_file: UploadFile, input_text: str):
+    '''
+    Processes the uploaded image and converts to 3D
+
+    Parameters
+    ----------
+    input_file: UploadFile  
+        Uploaded image file
+    
+    input_text: str
+        Text to be processed
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
+
+    # Define the output file name without extension
+    name = os.path.splitext(input_file.filename)[0]
+    
+    # Save the uploaded image
+    input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
+    with open(input_file_path, "wb") as f:
+        shutil.copyfileobj(input_file.file, f)
+
+    # Define the processed image file path
+    processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
+
+    # Call the Python scripts using subprocess
+    subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
+    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
+
+    # Return the json
+    return convert_and_pack_results(name)
+
 
 def process_image(input_file: UploadFile):
     '''
@@ -311,6 +348,40 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
+@app.post("/upload-image-text-swagger/")
+async def process_image_text_endpoint_swagger(image: UploadFile, text: str = Form(...)):
+    '''
+    Processes the uploaded image and converts to 3D to render on Swagger UI
+
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+
+    text: str
+        Text to be processed
+
+    Returns
+    -------
+    FileResponse:
+        Returns the processed GIF file and renders it directly on Swagger UI
+    '''
+    port = get_server_port()
+    try:
+        # Add log to port_status.csv
+        add_to_port_status(port, 'upload-image-text-swagger')
+        # Process the image
+        path = process_textimage(image, text)
+        # Remove log from port_status.csv
+        remove_from_port_status(port)
+        # Return the processed GIF
+        return FileResponse(path['gif_path'], media_type='image/gif')
+    
+    except Exception as e:
+        # Remove log from port_status.csv
+        remove_from_port_status(port)
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+    
 @app.post("/upload-image-lowf/")
 async def process_image_endpoint_json(image: UploadFile):
     '''
@@ -374,6 +445,40 @@ async def process_text_endpoint_json(text: str = Form(...)):
         remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
+@app.post("/upload-image-text-lowf/")
+async def process_image_text_endpoint_json(image: UploadFile, text: str = Form(...)):
+    '''
+    Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
+
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+
+    text: str
+        Text to be processed
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
+    port = get_server_port()
+    try:
+        # Add log to port_status.csv
+        add_to_port_status(port, 'upload-image-text-json')
+        # Process the image
+        path = process_textimage(image, text)
+        # Remove log from port_status.csv
+        remove_from_port_status(port)
+        # Return the file paths in json format
+        return path
+    
+    except Exception as e:
+        # Remove log from port_status.csv
+        remove_from_port_status(port)
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+    
 @app.post("/get-zip/")
 async def get_zip(file_path: str = Form(...)):
     '''
