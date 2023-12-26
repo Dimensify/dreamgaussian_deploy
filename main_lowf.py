@@ -298,19 +298,19 @@ async def process_image_endpoint_swagger(image: UploadFile):
     FileResponse:
         Returns the processed GIF file and renders it directly on Swagger UI
     '''
-    port = get_server_port()
+    # port = get_server_port()
     # Process the image
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-swagger')
+        # add_to_port_status(port, 'upload-image-swagger')
         path = process_image(image)        
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         return FileResponse(path['gif_path'], media_type='image/gif')
 
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
@@ -332,20 +332,20 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
     '''
 
     # Define the output GIF file path
-    port = get_server_port()
+    # port = get_server_port()
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'process-text-swagger')
+        # add_to_port_status(port, 'process-text-swagger')
         # Process the text
         path = process_text(text)
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 @app.post("/upload-image-text-swagger/")
@@ -366,20 +366,20 @@ async def process_image_text_endpoint_swagger(image: UploadFile, text: str = For
     FileResponse:
         Returns the processed GIF file and renders it directly on Swagger UI
     '''
-    port = get_server_port()
+    # port = get_server_port()
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-text-swagger')
+        # add_to_port_status(port, 'upload-image-text-swagger')
         # Process the image
         path = process_textimage(image, text)
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/upload-image-lowf/")
@@ -397,20 +397,20 @@ async def process_image_endpoint_json(image: UploadFile):
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
-    port = get_server_port()
+    # port = get_server_port()
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-json')
+        # add_to_port_status(port, 'upload-image-json')
         # Process the image
         path = process_image(image)
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         # Return the file paths in json format
         return path
 
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
 # Route to handle text inputs
@@ -429,20 +429,20 @@ async def process_text_endpoint_json(text: str = Form(...)):
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
-    port = get_server_port()
+    # port = get_server_port()
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'process-text-json')
+        # add_to_port_status(port, 'process-text-json')
         # Process the text
         path = process_text(text)
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         # Return the file paths in json format
         return path
     
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
 @app.post("/upload-image-text-lowf/")
@@ -463,20 +463,20 @@ async def process_image_text_endpoint_json(image: UploadFile, text: str = Form(.
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
-    port = get_server_port()
+    # port = get_server_port()
     try:
         # Add log to port_status.csv
-        add_to_port_status(port, 'upload-image-text-json')
+        # add_to_port_status(port, 'upload-image-text-json')
         # Process the image
         path = process_textimage(image, text)
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         # Return the file paths in json format
         return path
     
     except Exception as e:
         # Remove log from port_status.csv
-        remove_from_port_status(port)
+        # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/get-zip/")
