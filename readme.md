@@ -52,6 +52,11 @@ pip install git+https://github.com/ashawkey/kiuikit
 # MVDream
 pip install git+https://github.com/bytedance/MVDream
 ```
+# At present different conda virtual environments are being usded for low fidelity and high fidelity pipelines
+## For low fidelity use:
+``` conda activate dreamgauss```
+##  For high fidelity use:
+``` conda activate mvd ```
 
 Install all the dependencies, and to spin the backend API use ```uvicorn 'main:app' --host=0.0.0.0 --port=8000``` 
 
