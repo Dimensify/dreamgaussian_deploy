@@ -47,6 +47,10 @@ pip install git+https://github.com/ashawkey/kiuikit
 
 # MVDream
 pip install git+https://github.com/bytedance/MVDream
+
+# ImageDream
+pip install git+https://github.com/bytedance/ImageDream/#subdirectory=extern/ImageDream
+
 ```
 
 Install all the dependencies, and to spin the backend API use ```uvicorn 'main:app' --host=0.0.0.0 --port=8000``` 
