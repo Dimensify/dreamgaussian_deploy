@@ -53,7 +53,7 @@ pip install git+https://github.com/bytedance/ImageDream/#subdirectory=extern/Ima
 
 ```
 
-Install all the dependencies, and to spin the backend API use ```uvicorn 'main:app' --host=0.0.0.0 --port=8000``` 
+Install all the dependencies, and to spin the backend API use ```uvicorn 'main_lowf:app' --host=0.0.0.0 --port=8000``` for low fidelity pipeline and ```uvicorn 'main_high:app' --host=0.0.0.0 --port=8000``` for high fidelity
 
 Go to ```http://127.0.0.1:8000/docs``` goto Upload Image POST, select 'Try it out' and browse and upload the image. 
 The expected response is the gif path of the 3D generation
