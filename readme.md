@@ -53,9 +53,14 @@ pip install git+https://github.com/bytedance/ImageDream/#subdirectory=extern/Ima
 
 ```
 
-Install all the dependencies, and to spin the backend API use ```uvicorn 'main_lowf:app' --host=0.0.0.0 --port=8000``` for low fidelity pipeline and ```uvicorn 'main_high:app' --host=0.0.0.0 --port=8000``` for high fidelity
+Install all the dependencies, and to spin the backend API use ```python -m uvicorn 'main_lowf:app' --host=0.0.0.0 --port=8000``` for low fidelity pipeline and ```python -m uvicorn 'main_high:app' --host=0.0.0.0 --port=8000``` for high fidelity model. <br>
 
-Go to ```http://127.0.0.1:8000/docs``` goto Upload Image POST, select 'Try it out' and browse and upload the image. 
+#### Virtual Environments in the dimensify server:
+- `mvd`: For main_highf.py
+- `dreamgauss`: For main_lowf.py
+<br>
+
+Go to ```http://{host}:{port}/docs``` to access the swagger UI. Try Upload Image POST, select 'Try it out' and browse and upload the image. 
 The expected response is the gif path of the 3D generation
 
 Tested on:
