@@ -7,3 +7,6 @@
 [submodule "MVDream-threestudio"]
 	path = MVDream-threestudio
 	url = https://github.com/Dimensify/MVDream-threestudio
+[submodule "ImageDream"]
+	path = ImageDream
+	url = https://github.com/Dimensify/ImageDream
