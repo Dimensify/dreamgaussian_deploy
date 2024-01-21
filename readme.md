@@ -53,7 +53,7 @@ pip install git+https://github.com/bytedance/ImageDream/#subdirectory=extern/Ima
 
 ```
 
-Install all the dependencies, and to spin the backend API use ```python -m uvicorn 'main_lowf:app' --host=0.0.0.0 --port=8000``` for low fidelity pipeline and ```python -m uvicorn 'main_high:app' --host=0.0.0.0 --port=8000``` for high fidelity model. <br>
+Install all the dependencies, and to spin the backend API use ```python -m uvicorn 'main_lowf:app' --host=0.0.0.0 --port=8000``` for low fidelity pipeline and ```python -m uvicorn 'main_highf:app' --host=0.0.0.0 --port=8000``` for high fidelity model. <br>
 
 #### Virtual Environments in the dimensify server:
 ```conda activate mvd or conda activate dreamgauss```
