@@ -10,3 +10,6 @@ output/
 *.csv
 port_status.csv
 diff-gaussian-rasterization/
+main_highf.py
+dreamgaussian
+ImageDream

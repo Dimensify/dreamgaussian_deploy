@@ -28,7 +28,7 @@ handler = Mangum(app)
 config = uvicorn.Config(app="main:app")
 
 # Directory to store uploaded files
-UPLOAD_DIR = "./dreamgaussian/data"
+UPLOAD_DIR = "./ImageDream/data"
 
 # Create the upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -38,8 +38,13 @@ OUTPUT_DIR = "./output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 ##Config YAML File
-text_to_3D_yaml = "../configs/mvdream-sd21.yaml"
-text_to_3D_shading_yaml = "../configs/mvdream-sd21-shading.yaml"
+text_to_3D_mvdream_yaml = "../configs/mvdream-sd21.yaml"
+text_to_3D_shading_mvdream_yaml = "../configs/mvdream-sd21-shading.yaml"
+image_text_to_3D_imagedream_yaml = "../configs/imagedream-sd21-shading.yaml"
+
+# Add the path to PYTHONPATH
+new_path = './ImageDream/extern/ImageDream'
+os.environ['PYTHONPATH'] = os.pathsep.join([os.environ.get('PYTHONPATH', ''), new_path])
 
 ### UTILITIES ###
 def make_gif(input_path,output_path):
@@ -158,39 +163,76 @@ def convert_and_pack_results(name):
 
 ## TO BE EDITED WITH MAGIC 3D
 
-# def process_image(input_file: UploadFile):
-#     '''
-#     Processes the uploaded image and converts to 3D
+def process_image(input_file: UploadFile, input_text: str):
+    '''
+    Processes the uploaded image and the text description and converts to 3D
 
-#     Parameters
-#     ----------
-#     input_file: UploadFile  
-#         Uploaded image file
+    Parameters
+    ----------
+    input_file: UploadFile  
+        Uploaded image file
+    input_text: str
+        Text to be processed
 
-#     Returns
-#     -------
-#     json: dict
-#         Dictionary containing the paths to the GIF and ZIP files
-#     '''
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
 
-#     # Define the output file name without extension
-#     name = os.path.splitext(input_file.filename)[0]
+    ## Remove all special characters from the save path
+    directory_name = input_text.replace(" ", "_")
+    logs_path = "ImageDream/outputs/imagedream-sd21-shading/" + directory_name
+
+    # Define the output file name without extension
+    name = os.path.splitext(input_file.filename)[0]
     
-#     # Save the uploaded image
-#     input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
-#     with open(input_file_path, "wb") as f:
-#         shutil.copyfileobj(input_file.file, f)
+    # Save the uploaded image
+    input_image_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
+    with open(input_image_file_path, "wb") as f:
+        shutil.copyfileobj(input_file.file, f)
 
-#     # Define the processed image file path
-#     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
+    print("The training has started..........")
+    # Running the generation model
+    subprocess.run(["python", "launch.py", "--config", image_text_to_3D_imagedream_yaml, "--train", "--gpu", "0", 
+                    "name=imagedream-sd21-shading", "tag="+directory_name, 
+                    "system.prompt_processor.prompt=" + input_text,
+                    "system.prompt_processor.image_path=./data/" + input_file.filename, 
+                    "system.guidance.ckpt_path=./extern/ImageDream/release_models/ImageDream/sd-v2.1-base-4view-ipmv.pt",
+                    "system.guidance.config_path=./extern/ImageDream/imagedream/configs/sd_v2_base_ipmv.yaml"], 
+                    cwd="ImageDream/")
+    # Get the path of the mp4 file
+    mp4_path = glob(logs_path + "/save/*.mp4")[0]
+    # Define the output GIF file path and convert the mp4 to gif
+    gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
+    make_gif(mp4_path, gif_path)
+    print("Gif and mp4 created......") 
 
-#     # Call the Python scripts using subprocess
-#     subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-#     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-#     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    # Running the export model
+    subprocess.run(["python", "launch.py", "--config", image_text_to_3D_imagedream_yaml, "--export", "--gpu", "0", 
+                    "resume=" + "./outputs/imagedream-sd21-shading/" + directory_name + "/ckpts/last.ckpt", 
+                    "system.prompt_processor.prompt=" + input_text, 
+                    "system.prompt_processor.image_path=./data/" + input_file.filename,
+                    "system.exporter_type=mesh-exporter", 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256"], 
+                    cwd="ImageDream/")
 
-#     # Return the json
-#     return convert_and_pack_results(name)
+    # Pack the .mtl, .obj model files and .jpg texture file into a single zip
+    print("Export Done.....")
+    zip_json = pack_results(output_path= "ImageDream/outputs/imagedream-sd21-shading", 
+                            input_text = input_text, yaml_file_path=image_text_to_3D_imagedream_yaml)
+    zip_path  = zip_json["zip_path"]
+    print("Results packed.......")
+
+    # Remove the intermediatory files
+    deleteIntermediateFiles(path=logs_path+"/save/")
+    print("Deleted intermediatory files......")
+
+    # Return the json
+    # json = {"gif_path": gif_path, "zip_path": None}
+    json = {"gif_path": gif_path, "zip_path": zip_path}
+
+    return json  
 
 # Function to process text using process_text.py
 def process_text(input_text):
@@ -214,7 +256,7 @@ def process_text(input_text):
 
     print("The training has started..........")
     # Running the generation model
-    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
     # Get the path of the mp4 file
     mp4_path = glob(logs_path + "/save/*.mp4")[0]
     # Define the output GIF file path and convert the mp4 to gif
@@ -223,14 +265,15 @@ def process_text(input_text):
     print("Gif and mp4 created......")
 
     # Running the export model
-    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_yaml, "--export", "--gpu", "0", 
-                    "resume=" + "outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--export", "--gpu", "0", 
+                    "resume=" + "./outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
-    zip_json = pack_results(input_text,yaml_file_path=text_to_3D_shading_yaml)
+    zip_json = pack_results(output_path= "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading", 
+                            input_text = input_text, yaml_file_path=text_to_3D_shading_mvdream_yaml)
     zip_path  = zip_json["zip_path"]
     print("Results packed.......")
 
@@ -321,12 +364,14 @@ def get_max_steps(yaml_file_path):
     return max_steps_value
 
 
-def pack_results(input_text, yaml_file_path):
+def pack_results(output_path, input_text, yaml_file_path):
     '''
     packs the results into a zip file
 
     Parameters
     ----------
+    output_path: str
+        path of the output folder where all the generations are stored
     input_text: str
         input prompt text
     yaml_file_path: str
@@ -341,7 +386,7 @@ def pack_results(input_text, yaml_file_path):
 
     ## Remove all special characters from the save path
     directory_name = input_text.replace(" ", "_")
-    folder_path = f"MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/{directory_name}/save/it{max_steps}-export/" 
+    folder_path = f"{output_path}/{directory_name}/save/it{max_steps}-export/" 
     zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
 
     # Saving the texture.jpg, model.mtl and model.obj files into a zip file
@@ -441,35 +486,48 @@ def download_zip(zip_file_path: str = Form(...)):
 
 
 # Route to handle image uploads
-# @app.post("/upload-image-swagger/")
-# async def process_image_endpoint_swagger(image: UploadFile):
-#     '''
-#     Processes the uploaded image and converts to 3D to render on Swagger UI
+@app.post("/upload-image-swagger/")
+async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...)):
+    '''
+    Processes the uploaded image,text and converts to 3D to render on Swagger UI
 
-#     Parameters
-#     ----------
-#     image: UploadFile
-#         Uploaded image file
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+    text: str
+        Text to be processed
 
-#     Returns
-#     ------- 
-#     FileResponse:
-#         Returns the processed GIF file and renders it directly on Swagger UI
-#     '''
-#     port = get_server_port()
-#     # Process the image
-#     try:
-#         # Add log to port_status.csv
-#         add_to_port_status(port, 'upload-image-swagger')
-#         path = process_image(image)        
-#         # Remove log from port_status.csv
-#         remove_from_port_status(port)
-#         return FileResponse(path['gif_path'], media_type='image/gif')
+    Returns
+    ------- 
+    FileResponse:
+        Returns the processed GIF file and renders it directly on Swagger UI
+    '''
+    # port = get_server_port()
+    # Process the image
+    try:
+        # Add log to port_status.csv
+        # add_to_port_status(port, 'upload-image-swagger')
+        path = process_image(image,text)        
+        # Remove log from port_status.csv
+        # remove_from_port_status(port)
+        # return FileResponse(path['gif_path'], media_type='image/gif')
 
-#     except Exception as e:
-#         # Remove log from port_status.csv
-#         remove_from_port_status(port)
-#         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+        zip_path = path["zip_path"]
+        # Create a Path object for validation
+        download_path = Path(zip_path)
+        
+        # Check if the file exists
+        if not download_path.is_file():
+            return {"error": "Download file not found"}
+        
+        # Return the FileResponse with the file path and name
+        return FileResponse(zip_path, media_type="application/octet-stream", filename=download_path.name)
+
+    except Exception as e:
+        # Remove log from port_status.csv
+        # remove_from_port_status(port)
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
 # Route to handle text inputs
@@ -581,36 +639,36 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
 #         remove_from_port_status(port)
 #         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
-# @app.post("/get-zip/")
-# async def get_zip(file_path: str = Form(...)):
-#     '''
-#     Returns the ZIP file
+@app.post("/get-zip/")
+async def get_zip(file_path: str = Form(...)):
+    '''
+    Returns the ZIP file
 
-#     Parameters
-#     ----------
-#     file_path: str
-#         Path to the ZIP file
+    Parameters
+    ----------
+    file_path: str
+        Path to the ZIP file
 
-#     Returns
-#     -------
-#     FileResponse:
-#         Returns the ZIP file in octet-stream format
-#     '''
+    Returns
+    -------
+    FileResponse:
+        Returns the ZIP file in octet-stream format
+    '''
     
-#     # Getting the file name
-#     file_name = file_path.split('/')[-1]
+    # Getting the file name
+    file_name = file_path.split('/')[-1]
 
-#     ## Check if the file extension is zip with assert
-#     if not file_name.endswith('.zip'):
-#         raise HTTPException(status_code=400, detail="File extension is not zip")
+    ## Check if the file extension is zip with assert
+    if not file_name.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="File extension is not zip")
     
-#     # Define the output GIF file path
-#     try:
-#         # Return the processed GIF
-#         return FileResponse(file_path, media_type='application/octet-stream', filename=file_name)
+    # Define the output GIF file path
+    try:
+        # Return the processed GIF
+        return FileResponse(file_path, media_type='application/octet-stream', filename=file_name)
     
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
 
 # @app.post("/render-gif-swagger/")
@@ -681,4 +739,3 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=config.port)
 
-# pack_results("a running cheetah", yaml_file_path=text_to_3D_shading_yaml)
