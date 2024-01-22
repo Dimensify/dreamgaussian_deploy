@@ -6,6 +6,7 @@ import os
 import subprocess
 from mangum import Mangum
 from PIL import Image, ImageSequence
+from transformers import BlipProcessor, BlipForConditionalGeneration
 import pandas as pd
 from datetime import datetime
 import uvicorn
@@ -160,6 +161,36 @@ def convert_and_pack_results(name):
     json = {"gif_path": f'output/{name}.gif', "zip_path": f'output/{name}.zip'}
 
     return json
+## Generate Caption from Image
+def generate_captions(image_path):
+    '''
+    Generates the caption from the image using transformers BLIP
+
+    Parameters
+    ----------
+    image_path: str
+        Path to the image
+
+    Returns
+    -------
+    str:
+        Caption generated from the image
+        
+    '''
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+    model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to("cuda")
+
+    # Read the image
+    image = Image.open(image_path).convert("RGB")
+
+    # Unconditional image captioning 
+    inputs = processor(image, return_tensors="pt").to("cuda")
+
+    out = model.generate(**inputs)
+    text = processor.decode(out[0], skip_special_tokens=True)
+
+    return text
+
 
 ## TO BE EDITED WITH MAGIC 3D
 
@@ -398,38 +429,6 @@ def pack_results(output_path, input_text, yaml_file_path):
 
     return json
 
-
-### API ### 
-
-@app.post("/dummy_method/")
-async def dummyMethod(text:str = Form(...)):
-    try:
-        json = {"res": f'suffessfully', "done": f'processed'}
-        return json;
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
-
-
-# @app.post("/delete_intermediate_files/")
-# async 
-# def deleteIntermediateFiles(path: str = Form(...)):
-#     # Get a list of all files in the folder
-#     files = os.listdir(path)
-#     print("Deleting files starting!!")
-#     # Iterate through each file
-#     for file in files:
-#         print("Deleting each file..")
-#         # Check if the file is a GIF or image (you can extend this list as needed)
-#         if file.lower().endswith(('.mp4', '.png', '.jpg', '.jpeg')):
-#             file_path = os.path.join(path, file)
-#             try:
-#                 # Delete the file
-#                 os.remove(file_path)
-#                 print(f"Deleted: {file_path}")
-#             except Exception as e:
-#                 print(f"Error deleting {file_path}: {e}")
-
 def deleteIntermediateFiles(path: str = Form(...)):
     # Get a list of all files and subdirectories in the folder
     files_and_folders = os.listdir(path)
@@ -465,6 +464,40 @@ def deleteIntermediateFiles(path: str = Form(...)):
             except Exception as e:
                 print(f"Error deleting folder {item_path}: {e}")
 
+### API ### 
+
+
+@app.post("/dummy_method/")
+async def dummyMethod(text:str = Form(...)):
+    try:
+        json = {"res": f'suffessfully', "done": f'processed'}
+        return json;
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
+
+
+# @app.post("/delete_intermediate_files/")
+# async 
+# def deleteIntermediateFiles(path: str = Form(...)):
+#     # Get a list of all files in the folder
+#     files = os.listdir(path)
+#     print("Deleting files starting!!")
+#     # Iterate through each file
+#     for file in files:
+#         print("Deleting each file..")
+#         # Check if the file is a GIF or image (you can extend this list as needed)
+#         if file.lower().endswith(('.mp4', '.png', '.jpg', '.jpeg')):
+#             file_path = os.path.join(path, file)
+#             try:
+#                 # Delete the file
+#                 os.remove(file_path)
+#                 print(f"Deleted: {file_path}")
+#             except Exception as e:
+#                 print(f"Error deleting {file_path}: {e}")
+
+
+
 # Export the obj files
 @app.route('/download_zip/')
 def download_zip(zip_file_path: str = Form(...)):
@@ -484,6 +517,33 @@ def download_zip(zip_file_path: str = Form(...)):
     return FileResponse(zip_path, filename=download_path.name)
 
 
+# API for generating caption
+@app.post("/generate_caption/")
+async def generate_caption(image: UploadFile):
+    '''
+    Generates the caption from the image using transformers BLIP
+
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+
+    Returns
+    -------
+    str:
+        Caption generated from the image
+    '''
+
+    # Save the uploaded image
+    input_image_file_path = os.path.join(UPLOAD_DIR, image.filename)
+    with open(input_image_file_path, "wb") as f:
+        shutil.copyfileobj(image.file, f)
+
+    # Generate the caption
+    caption = generate_captions(input_image_file_path)
+
+    # Return the caption
+    return caption
 
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
