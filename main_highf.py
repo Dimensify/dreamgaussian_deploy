@@ -464,35 +464,7 @@ def deleteIntermediateFiles(path: str = Form(...)):
             except Exception as e:
                 print(f"Error deleting folder {item_path}: {e}")
 
-
-def get_gpu_occupied():
-    '''
-    Get the GPU memory occupied
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    list: list
-        List containing the GPU memory occupied percentages
-    '''
-    ## Getting Used Memory
-    command = "nvidia-smi --query-gpu=memory.used --format=csv"
-    memory_used_info = subprocess.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
-    memory_used_values = [int(x.split()[0]) for i, x in enumerate(memory_used_info)]
-
-    ## Getting Total Memory
-    command = "nvidia-smi --query-gpu=memory.total --format=csv"
-    memory_info = subprocess.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
-    memory_values = [int(x.split()[0]) for i, x in enumerate(memory_info)]
-
-    return [i/j for i, j in zip(memory_used_values, memory_values)]
-
-
 ### API ### 
-
 
 @app.post("/dummy_method/")
 async def dummyMethod(text:str = Form(...)):
@@ -502,28 +474,6 @@ async def dummyMethod(text:str = Form(...)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
-
-@app.post("/get_occupied_status/")
-async def get_occupied_status():
-    '''
-    Returns the GPU memory occupied
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    list: list
-        List containing boolean if GPU is occupied
-    '''
-    try:
-        occupied = get_gpu_occupied()
-        occupied_status = ['occupied' if i>0.3 else 'unoccupied' for i in occupied]
-        return {"percentage": occupied, "status": occupied_status}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get occupied status: {str(e)}")
 
 # @app.post("/delete_intermediate_files/")
 # async 
