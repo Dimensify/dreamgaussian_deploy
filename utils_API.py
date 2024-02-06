@@ -46,6 +46,18 @@ def get_gpu_occupied():
     return [i/j for i, j in zip(memory_used_values, memory_values)]
 
 def port_info():
+    '''
+    Get the ports that are being used for API calls
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    list: list
+        List containing the ports that are being used
+    '''
     lsof = subprocess.check_output(('lsof', '-i'))
     ## Get all the lines that start with python
     lsof = [i for i in lsof.decode('utf-8').split('\n') if 'python' in i]

@@ -52,6 +52,36 @@ def get_server_port():
             return sys.argv[i+1]
     return '8000'
 
+def create_busy_file():
+    '''
+    Creates a busy file to indicate that the server is busy
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    '''
+    with open('_busy', 'w') as f:
+        f.write('')
+
+def remove_busy_file():
+    '''
+    Removes the busy file to indicate that the server is free
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    '''
+    if os.path.exists('_busy'):
+        os.remove('_busy')
+
 
 def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     '''
@@ -303,14 +333,17 @@ async def process_image_endpoint_swagger(image: UploadFile):
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-swagger')
+        create_busy_file()
         path = process_image(image)        
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         return FileResponse(path['gif_path'], media_type='image/gif')
 
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
@@ -336,16 +369,19 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'process-text-swagger')
+        create_busy_file()
         # Process the text
         path = process_text(text)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 @app.post("/upload-image-text-swagger/")
@@ -370,16 +406,19 @@ async def process_image_text_endpoint_swagger(image: UploadFile, text: str = For
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-text-swagger')
+        create_busy_file()
         # Process the image
         path = process_textimage(image, text)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/upload-image-lowf/")
@@ -401,16 +440,19 @@ async def process_image_endpoint_json(image: UploadFile):
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-json')
+        create_busy_file()
         # Process the image
         path = process_image(image)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         # Return the file paths in json format
         return path
 
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
 # Route to handle text inputs
@@ -433,16 +475,19 @@ async def process_text_endpoint_json(text: str = Form(...)):
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'process-text-json')
+        create_busy_file()
         # Process the text
         path = process_text(text)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         # Return the file paths in json format
         return path
     
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
 @app.post("/upload-image-text-lowf/")
@@ -467,16 +512,19 @@ async def process_image_text_endpoint_json(image: UploadFile, text: str = Form(.
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-text-json')
+        create_busy_file()
         # Process the image
         path = process_textimage(image, text)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         # Return the file paths in json format
         return path
     
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/get-zip/")
