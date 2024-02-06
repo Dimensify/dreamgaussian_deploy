@@ -1,21 +1,8 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-import shutil
-import os
 import subprocess
 from mangum import Mangum
-from PIL import Image, ImageSequence
-from transformers import BlipProcessor, BlipForConditionalGeneration
-import pandas as pd
-from datetime import datetime
 import uvicorn
-import sys 
-from moviepy.editor import VideoFileClip
-from glob import glob
-from pathlib import Path
-import yaml
-import tqdm
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -58,8 +45,17 @@ def get_gpu_occupied():
 
     return [i/j for i, j in zip(memory_used_values, memory_values)]
 
-def get_progress(directory, total_steps=10000):
-    pass
+def port_info():
+    lsof = subprocess.check_output(('lsof', '-i'))
+    ## Get all the lines that start with python
+    lsof = [i for i in lsof.decode('utf-8').split('\n') if 'python' in i]
+    ## Get (LISTEN) or (ESTABLISHED) ports along with what is running on them
+    lsof = [i.split() for i in lsof if 'ESTABLISHED' in i]
+    ## Only keep ports, LISTEN or ESTABLISHED, and the process running on them
+    lsof = [[i[8].split('->')[0].split(':')[-1], i[-1], (i[8].split('->')[-1])] for i in lsof]
+    ## Convert to dictionary
+    lsof = [{'port': i[0], 'status': i[1], 'process': i[2]} for i in lsof]
+    return lsof
 
 ### API ###
 @app.post("/get_occupied_status/")
@@ -78,8 +74,31 @@ async def get_occupied_status():
     '''
     try:
         occupied = get_gpu_occupied()
-        occupied_status = ['occupied' if i>0.3 else 'unoccupied' for i in occupied]
+        occupied_status = ['occupied' if i>0.05 else 'unoccupied' for i in occupied]
         return {"percentage": occupied, "status": occupied_status}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get occupied status: {str(e)}")
+    
+@app.post("/get_port_info/")
+async def get_port_info():
+    '''
+    Returns the ports that are being used
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    list: list
+        List containing the ports that are being used
+    '''
+    try:
+        return port_info()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get port info: {str(e)}")
+
+if __name__ == '__main__':
+    print("Starting API")
+    print(port_info())
