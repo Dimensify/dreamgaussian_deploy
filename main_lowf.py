@@ -34,6 +34,7 @@ OUTPUT_DIR = "./output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 ### UTILITIES ###
+@app.get("/get-port")
 def get_server_port():
     '''
     Returns the port number of the server
