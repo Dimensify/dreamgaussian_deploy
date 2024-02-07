@@ -211,7 +211,8 @@ def process_image(input_file: UploadFile):
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
-
+    # Remove - and spaces from the file name
+    input_file.filename = input_file.filename.replace(' ', '_').replace('-', '_')
     # Define the output file name without extension
     name = os.path.splitext(input_file.filename)[0]
     
