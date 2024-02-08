@@ -459,7 +459,8 @@ async def process_image_endpoint_json(image: UploadFile):
 
 # Route to handle text inputs
 @app.post("/process-text-lowf/")
-async def process_text_endpoint_json(text: str = Form(...)):
+async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(...)):
+    print("user_id",userid)
     '''
     Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
