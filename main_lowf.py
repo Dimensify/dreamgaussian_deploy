@@ -114,7 +114,7 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     # Save the modified frames as a new GIF file
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
-def convert_and_pack_results(name):
+def convert_and_pack_results(name, userid):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
 
@@ -128,20 +128,22 @@ def convert_and_pack_results(name):
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
+    ## Make a userid directory if it doesn't exist
+    os.makedirs(f'output/{userid}', exist_ok=True)
 
     # Coverting to gif
-    os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{name}.gif --wogui --force_cuda_rast")
+    os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{userid}/{name}.gif --wogui --force_cuda_rast")
     # Make the GIF loop infinitely
-    make_gif_loop_infinitely(f'output/{name}.gif', f'output/{name}.gif')
+    make_gif_loop_infinitely(f'output/{userid}/{name}.gif', f'output/{userid}/{name}.gif')
 
     ## Move png, mtl and obj file to a new folder name
     os.makedirs(f'logs/{name}', exist_ok=True)
     shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
     shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
     shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
-    shutil.copy(f'output/{name}.gif', f'logs/{name}/{name}.gif')
+    shutil.copy(f'output/{userid}/{name}.gif', f'logs/{name}/{name}.gif')
     # Saving the obj, mtl and png files into a zip file
-    shutil.make_archive(f'output/{name}', 'zip', f'logs/{name}')
+    shutil.make_archive(f'output/{userid}/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
     shutil.rmtree(f'logs/{name}')
     
@@ -156,11 +158,11 @@ def convert_and_pack_results(name):
             shutil.rmtree(f'logs/{file}')
 
     # Add gif path and zip path to a json format
-    json = {"gif_path": f'output/{name}.gif', "zip_path": f'output/{name}.zip'}
+    json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip'}
 
     return json
 
-def process_textimage(input_file: UploadFile, input_text: str):
+def process_textimage(input_file: UploadFile, input_text: str, userid: str):
     '''
     Processes the uploaded image and converts to 3D
 
@@ -195,10 +197,10 @@ def process_textimage(input_file: UploadFile, input_text: str):
     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
 
     # Return the json
-    return convert_and_pack_results(name)
+    return convert_and_pack_results(name, userid)
 
 
-def process_image(input_file: UploadFile):
+def process_image(input_file: UploadFile, userid: str):
     '''
     Processes the uploaded image and converts to 3D
 
@@ -234,10 +236,10 @@ def process_image(input_file: UploadFile):
     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
 
     # Return the json
-    return convert_and_pack_results(name)
+    return convert_and_pack_results(name, userid)
 
 # Function to process text using process_text.py
-def process_text(input_text):
+def process_text(input_text, userid: str):
     '''
     Processes the text and converts to 3D
 
@@ -262,7 +264,7 @@ def process_text(input_text):
     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
 
     # Return the json
-    return convert_and_pack_results(save_path)
+    return convert_and_pack_results(save_path, userid)
 
 def add_to_port_status(port,api):
     '''
@@ -321,7 +323,7 @@ async def dummyMethod(text:str = Form(...)):
 
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
-async def process_image_endpoint_swagger(image: UploadFile):
+async def process_image_endpoint_swagger(image: UploadFile, userid: str = Form(...)):
     '''
     Processes the uploaded image and converts to 3D to render on Swagger UI
 
@@ -341,7 +343,7 @@ async def process_image_endpoint_swagger(image: UploadFile):
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-swagger')
         create_busy_file()
-        path = process_image(image)        
+        path = process_image(image, userid)        
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
@@ -356,7 +358,7 @@ async def process_image_endpoint_swagger(image: UploadFile):
 
 # Route to handle text inputs
 @app.post("/process-text-swagger/")
-async def process_text_endpoint_swagger(text: str = Form(...)):
+async def process_text_endpoint_swagger(text: str = Form(...), userid: str = Form(...)):
     '''
     Processes the text and converts to 3D to render on Swagger UI
 
@@ -378,7 +380,7 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # add_to_port_status(port, 'process-text-swagger')
         create_busy_file()
         # Process the text
-        path = process_text(text)
+        path = process_text(text, userid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
@@ -429,7 +431,7 @@ async def process_image_text_endpoint_swagger(image: UploadFile, text: str = For
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/upload-image-lowf/")
-async def process_image_endpoint_json(image: UploadFile):
+async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)):
     '''
     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
@@ -449,7 +451,7 @@ async def process_image_endpoint_json(image: UploadFile):
         # add_to_port_status(port, 'upload-image-json')
         create_busy_file()
         # Process the image
-        path = process_image(image)
+        path = process_image(image, userid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
@@ -485,7 +487,7 @@ async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(.
         # add_to_port_status(port, 'process-text-json')
         create_busy_file()
         # Process the text
-        path = process_text(text)
+        path = process_text(text, userid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
