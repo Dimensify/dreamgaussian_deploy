@@ -214,9 +214,12 @@ def process_image(input_file: UploadFile):
     '''
     # Remove - and spaces from the file name
     input_file.filename = input_file.filename.replace(' ', '_').replace('-', '_')
+    ## Add date time as a suffix to the file name
+    input_file.filename = input_file.filename.split('.')[0] + '_' + datetime.now().strftime("%Y%m%d%H%M%S") + '.' + input_file.filename.split('.')[1]
     # Define the output file name without extension
     name = os.path.splitext(input_file.filename)[0]
     
+    ## Add date time as a suffix to the file name
     # Save the uploaded image
     input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
     with open(input_file_path, "wb") as f:
@@ -251,6 +254,8 @@ def process_text(input_text):
 
     ## Remove all special characters from the save path
     save_path = "".join(e for e in input_text if e.isalnum()).lower()
+    ## Add date time as a suffix to the file name
+    save_path = save_path + '_' + datetime.now().strftime("%Y%m%d%H%M%S")
     # Replace this with the actual command to process the text
     # For example, you can use subprocess to run your Python script
     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
