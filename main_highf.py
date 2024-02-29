@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException
+from fastapi import FastAPI, UploadFile, Form, File, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -15,6 +15,7 @@ from moviepy.editor import VideoFileClip
 from glob import glob
 from pathlib import Path
 import yaml
+import hashlib
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -47,6 +48,7 @@ image_text_to_3D_imagedream_yaml = "../configs/imagedream-sd21-shading.yaml"
 new_path = './ImageDream/extern/ImageDream'
 os.environ['PYTHONPATH'] = os.pathsep.join([os.environ.get('PYTHONPATH', ''), new_path])
 
+
 ### UTILITIES ###
 def make_gif(input_path,output_path):
     '''
@@ -77,14 +79,17 @@ def make_gif(input_path,output_path):
     # Resize the video to a smaller size (adjust as needed)
     target_width = 320
     target_height = 280
+    method = Image.FASTOCTREE
+    colors = 250
     video_clip = video_clip.resize((target_width, target_height))
-
     # Create a list to store GIF frames
     gif_frames = []
 
     # Generate GIF frames
     for frame in video_clip.iter_frames(fps=frame_rate, dtype='uint8'):
-        gif_frames.append(Image.fromarray(frame))
+        im = Image.fromarray(frame)
+        im = im.quantize(colors=colors, method=method, dither=0)
+        gif_frames.append(im)
 
     # Save the GIF using Pillow
     gif_frames[0].save(
@@ -92,9 +97,9 @@ def make_gif(input_path,output_path):
         save_all=True,
         append_images=gif_frames[1:],
         duration=1000 / frame_rate,
-        loop=0  # 0 means loop indefinitely
+        loop=0,  # 0 means loop indefinitely
+        format="GIF"
     )
-
     # Return the processed image path
     return output_gif_path
 
@@ -193,8 +198,14 @@ def generate_captions(image_path):
 
 
 ## TO BE EDITED WITH MAGIC 3D
+def get_asset_folder(userid, input_text, current_timestamp):
+    unique_id = f"{userid}+{input_text}+{current_timestamp}"
+    model_id = hashlib.md5(unique_id.encode()).hexdigest()
+    
+    return f"{OUTPUT_DIR}/{userid}/{model_id}"
 
-def process_image(input_file: UploadFile, input_text: str):
+
+def process_image(input_file: UploadFile, input_text: str, userid):
     '''
     Processes the uploaded image and the text description and converts to 3D
 
@@ -204,6 +215,8 @@ def process_image(input_file: UploadFile, input_text: str):
         Uploaded image file
     input_text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier
 
     Returns
     -------
@@ -212,11 +225,16 @@ def process_image(input_file: UploadFile, input_text: str):
     '''
 
     ## Remove all special characters from the save path
-    directory_name = input_text.replace(" ", "_")
-    logs_path = "ImageDream/outputs/imagedream-sd21-shading/" + directory_name
-
-    # Define the output file name without extension
-    name = os.path.splitext(input_file.filename)[0]
+    current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    input_text = input_text.lower()
+    experiment_dir = input_text.replace(" ", "_")
+    logs_path = "ImageDream/outputs/imagedream-sd21-shading/" + experiment_dir
+    abs_logs_path = str(Path(logs_path).resolve())
+    
+    asset_folder = get_asset_folder(userid, input_text, current_timestamp)
+ 
+    ## Make a asset directory if it doesn't exist
+    os.makedirs(asset_folder, exist_ok=True)
     
     # Save the uploaded image
     input_image_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
@@ -224,34 +242,37 @@ def process_image(input_file: UploadFile, input_text: str):
         shutil.copyfileobj(input_file.file, f)
 
     print("The training has started..........")
+    # Export PYTHONPATH
+    subprocess.run('export PYTHONPATH=$PYTHONPATH:./extern/ImageDream', cwd="ImageDream/", shell=True, executable="/bin/bash")
+
     # Running the generation model
     subprocess.run(["python", "launch.py", "--config", image_text_to_3D_imagedream_yaml, "--train", "--gpu", "0", 
-                    "name=imagedream-sd21-shading", "tag="+directory_name, 
+                    "name=imagedream-sd21-shading", "tag="+experiment_dir, 
                     "system.prompt_processor.prompt=" + input_text,
                     "system.prompt_processor.image_path=./data/" + input_file.filename, 
                     "system.guidance.ckpt_path=./extern/ImageDream/release_models/ImageDream/sd-v2.1-base-4view-ipmv.pt",
-                    "system.guidance.config_path=./extern/ImageDream/imagedream/configs/sd_v2_base_ipmv.yaml"], 
+                    "system.guidance.config_path=./extern/ImageDream/imagedream/configs/sd_v2_base_ipmv.yaml", "exp_root_dir=" + abs_logs_path], 
                     cwd="ImageDream/")
     # Get the path of the mp4 file
     mp4_path = glob(logs_path + "/save/*.mp4")[0]
     # Define the output GIF file path and convert the mp4 to gif
-    gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
+    # gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
+    gif_path = os.path.join(f"{asset_folder}/{experiment_dir}.gif")
     make_gif(mp4_path, gif_path)
     print("Gif and mp4 created......") 
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", image_text_to_3D_imagedream_yaml, "--export", "--gpu", "0", 
-                    "resume=" + "./outputs/imagedream-sd21-shading/" + directory_name + "/ckpts/last.ckpt", 
+                    "resume=" + abs_logs_path + "/ckpts/last.ckpt", 
                     "system.prompt_processor.prompt=" + input_text, 
                     "system.prompt_processor.image_path=./data/" + input_file.filename,
                     "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256"], 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", ], 
                     cwd="ImageDream/")
-
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
-    zip_json = pack_results(output_path= "ImageDream/outputs/imagedream-sd21-shading", 
-                            input_text = input_text, yaml_file_path=image_text_to_3D_imagedream_yaml)
+    zip_json = pack_results(output_path= logs_path,  
+                            asset_folder=asset_folder)
     zip_path  = zip_json["zip_path"]
     print("Results packed.......")
 
@@ -263,10 +284,11 @@ def process_image(input_file: UploadFile, input_text: str):
     # json = {"gif_path": gif_path, "zip_path": None}
     json = {"gif_path": gif_path, "zip_path": zip_path}
 
-    return json  
+    return json
+
 
 # Function to process text using process_text.py
-def process_text(input_text):
+def process_text(input_text, userid):
     '''
     Processes the text and converts to 3D
 
@@ -274,6 +296,8 @@ def process_text(input_text):
     ----------
     input_text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier
 
     Returns
     -------
@@ -282,29 +306,46 @@ def process_text(input_text):
     '''
 
     ## Remove all special characters from the save path
-    directory_name = input_text.replace(" ", "_")
-    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + directory_name
+    current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    input_text = input_text.lower()
+    experiment_dir = input_text.replace(" ", "_")
+    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + experiment_dir
+    abs_logs_path = str(Path(logs_path).resolve())
+    
+    asset_folder = get_asset_folder(userid, input_text, current_timestamp)
+    
+    ## Make the asset folder directory if it doesn't exist
+    os.makedirs(asset_folder, exist_ok=True)
 
     print("The training has started..........")
+    
     # Running the generation model
-    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
+    subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--train", "--gpu", "0", "system.prompt_processor.prompt=" + input_text, "exp_dir=" + abs_logs_path], cwd="MVDream-threestudio/")
+    
+    
     # Get the path of the mp4 file
-    mp4_path = glob(logs_path + "/save/*.mp4")[0]
+    print(abs_logs_path)
+    print(glob(abs_logs_path + "/save/*.mp4"))
+    mp4_path = glob(abs_logs_path + "/save/*.mp4")[0]
+    
     # Define the output GIF file path and convert the mp4 to gif
-    gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
+    # gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
+    gif_path = os.path.join(f"{asset_folder}/{experiment_dir}.gif")
     make_gif(mp4_path, gif_path)
     print("Gif and mp4 created......")
 
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--export", "--gpu", "0", 
-                    "resume=" + "./outputs/mvdream-sd21-rescale0.5-shading/" + directory_name + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
+                    "resume=" + abs_logs_path + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
-    zip_json = pack_results(output_path= "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading", 
-                            input_text = input_text, yaml_file_path=text_to_3D_shading_mvdream_yaml)
+    
+    zip_json = pack_results(output_path= logs_path,
+                            asset_folder=asset_folder)
+    
     zip_path  = zip_json["zip_path"]
     print("Results packed.......")
 
@@ -395,7 +436,7 @@ def get_max_steps(yaml_file_path):
     return max_steps_value
 
 
-def pack_results(output_path, input_text, yaml_file_path):
+def pack_results(output_path, asset_folder):
     '''
     packs the results into a zip file
 
@@ -403,22 +444,30 @@ def pack_results(output_path, input_text, yaml_file_path):
     ----------
     output_path: str
         path of the output folder where all the generations are stored
-    input_text: str
-        input prompt text
-    yaml_file_path: str
-        file path of the yaml file that is used for 3D generation
+    asset_folder: str
+        file path where user assets from 3D generation are saved
 
     Returns
     -------
     json: dict
         Dictionary containing the paths to ZIP files
     '''
+    yaml_file_path = f"{output_path}/configs/raw.yaml"
     max_steps = get_max_steps(yaml_file_path)
 
-    ## Remove all special characters from the save path
-    directory_name = input_text.replace(" ", "_")
-    folder_path = f"{output_path}/{directory_name}/save/it{max_steps}-export/" 
-    zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
+    folder_path = f"{output_path}/save/it{max_steps}-export/"
+    experiment_dir = output_path.split('/')[-1]
+
+    try:
+        # Copy the gif file to the export directory
+        gif_path = os.path.join(f"{asset_folder}/{experiment_dir}.gif")
+        shutil.copyfile(gif_path, '{}/{}'.format(folder_path, gif_path.split('/')[-1]))
+        print(f"File copied from '{gif_path}' to '{folder_path}'.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    # zip_path = os.path.join(OUTPUT_DIR, f"{directory_name}")
+    zip_path = os.path.join(f"{asset_folder}/{experiment_dir}")
 
     # Saving the texture.jpg, model.mtl and model.obj files into a zip file
     # os.makedirs(zip_path, exist_ok=True)
@@ -545,7 +594,7 @@ async def generate_caption(image: UploadFile):
 
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
-async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...)):
+async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...), userid: str = Form(...)):
     '''
     Processes the uploaded image,text and converts to 3D to render on Swagger UI
 
@@ -555,6 +604,8 @@ async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...
         Uploaded image file
     text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier 
 
     Returns
     ------- 
@@ -566,7 +617,7 @@ async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-swagger')
-        path = process_image(image,text)        
+        path = process_image(image,text,userid)        
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         # return FileResponse(path['gif_path'], media_type='image/gif')
@@ -590,7 +641,7 @@ async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...
 
 # Route to handle text inputs
 @app.post("/process-text-swagger/")
-async def process_text_endpoint_swagger(text: str = Form(...)):
+async def process_text_endpoint_swagger(text: str = Form(...), userid: str = Form(...)):
     '''
     Processes the text and converts to 3D to render on Swagger UI
 
@@ -598,6 +649,8 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
     ----------
     text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier
 
     Returns
     -------
@@ -611,7 +664,7 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # Add log to port_status.csv
         # add_to_port_status(port, 'process-text-swagger')
         # Process the text
-        path = process_text(text)
+        path = process_text(text,userid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         # Return the processed GIF
@@ -634,68 +687,61 @@ async def process_text_endpoint_swagger(text: str = Form(...)):
         # remove_from_port_status(port)
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-# @app.post("/upload-image-json/")
-# async def process_image_endpoint_json(image: UploadFile):
-#     '''
-#     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
-#     Parameters
-#     ----------
-#     image: UploadFile
-#         Uploaded image file
+# Route to handle text inputs and return the paths of model files as GIF and ZIP
+@app.post("/process-text-highf/")
+async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(...)):
+    '''
+    Processes the text and converts to 3D
 
-#     Returns
-#     -------
-#     json: dict
-#         Dictionary containing the paths to the GIF and ZIP files
-#     '''
-#     port = get_server_port()
-#     try:
-#         # Add log to port_status.csv
-#         add_to_port_status(port, 'upload-image-json')
-#         # Process the image
-#         path = process_image(image)
-#         # Remove log from port_status.csv
-#         remove_from_port_status(port)
-#         # Return the file paths in json format
-#         return path
+    Parameters
+    ----------
+    text: str
+        Text to be processed
+    userid: ID
+        Authenticated user unique identifier
 
-#     except Exception as e:
-#         # Remove log from port_status.csv
-#         remove_from_port_status(port)
-#         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+    Returns
+    -------
+    json: dict
+        returns the dictionary containing the paths to the GIF and ZIP files
+    '''
 
-# # Route to handle text inputs
-# @app.post("/process-text-json/")
-# async def process_text_endpoint_json(text: str = Form(...)):
-#     '''
-#     Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
-
-#     Parameters
-#     ----------
-#     text: str
-#         Text to be processed
-
-#     Returns
-#     -------
-#     json: dict
-#         Dictionary containing the paths to the GIF and ZIP files
-#     '''
-#     port = get_server_port()
-#     try:
-#         # Add log to port_status.csv
-#         add_to_port_status(port, 'process-text-json')
-#         # Process the text
-#         path = process_text(text)
-#         # Remove log from port_status.csv
-#         remove_from_port_status(port)
-#         # Return the file paths in json format
-#         return path
+    try:
+        path = process_text(text,userid)
+        return path
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-#     except Exception as e:
-#         # Remove log from port_status.csv
-#         remove_from_port_status(port)
-#         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
+
+# Route to handle image uploads and return the paths of model files as GIF and ZIP
+@app.post("/upload-image-highf/")
+async def process_image_endpoint_json(image: UploadFile, text: str = Form(...), userid: str = Form(...)):
+    '''
+    Processes the uploaded image,text and converts to 3D
+
+    Parameters
+    ----------
+    image: UploadFile
+        Uploaded image file
+    text: str
+        Text to be processed
+    userid: ID
+        Authenticated user unique identifier 
+
+    Returns
+    ------- 
+    json: dict
+        returns the dictionary containing the paths to the GIF and ZIP files
+    '''
+    
+    try:
+        path = process_image(image,text,userid)        
+        return path
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")    
+
 
 @app.post("/get-zip/")
 async def get_zip(file_path: str = Form(...)):
@@ -793,7 +839,9 @@ async def get_zip(file_path: str = Form(...)):
  
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
-    
+
+        
+        
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=config.port)
 
