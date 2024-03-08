@@ -228,7 +228,7 @@ def process_image(input_file: UploadFile, input_text: str, userid):
     current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     input_text = input_text.lower()
     experiment_dir = input_text.replace(" ", "_")
-    logs_path = "ImageDream/outputs/imagedream-sd21-shading/" + experiment_dir
+    logs_path = "./ImageDream/outputs/imagedream-sd21-shading/" + experiment_dir
     abs_logs_path = str(Path(logs_path).resolve())
     
     asset_folder = get_asset_folder(userid, input_text, current_timestamp)
@@ -271,7 +271,7 @@ def process_image(input_file: UploadFile, input_text: str, userid):
                     cwd="ImageDream/")
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
-    zip_json = pack_results(output_path= logs_path,  
+    zip_json = pack_results(output_path= abs_logs_path,  
                             asset_folder=asset_folder)
     zip_path  = zip_json["zip_path"]
     print("Results packed.......")
@@ -309,7 +309,7 @@ def process_text(input_text, userid):
     current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     input_text = input_text.lower()
     experiment_dir = input_text.replace(" ", "_")
-    logs_path = "MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + experiment_dir
+    logs_path = "./MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + experiment_dir
     abs_logs_path = str(Path(logs_path).resolve())
     
     asset_folder = get_asset_folder(userid, input_text, current_timestamp)
@@ -342,8 +342,8 @@ def process_text(input_text, userid):
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
-    
-    zip_json = pack_results(output_path= logs_path,
+
+    zip_json = pack_results(output_path= abs_logs_path,
                             asset_folder=asset_folder)
     
     zip_path  = zip_json["zip_path"]
