@@ -102,7 +102,7 @@ def make_gif(input_path,output_path):
     )
     # Return the processed image path
     return output_gif_path
-
+@app.get("/get-port")
 def get_server_port():
     '''
     Returns the port number of the server
