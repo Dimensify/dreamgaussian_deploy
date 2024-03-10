@@ -277,7 +277,9 @@ def process_image(input_file: UploadFile, input_text: str, userid):
     print("Results packed.......")
 
     # Remove the intermediatory files
-    deleteIntermediateFiles(path=logs_path+"/save/")
+    # deleteIntermediateFiles(path=logs_path+"/save/")
+    # remove the experiment dir for the current run (all files+folders)
+    delete_intermediate_files(path=abs_logs_path)
     print("Deleted intermediatory files......")
 
     # Return the json
@@ -324,8 +326,6 @@ def process_text(input_text, userid):
     
     
     # Get the path of the mp4 file
-    print(abs_logs_path)
-    print(glob(abs_logs_path + "/save/*.mp4"))
     mp4_path = glob(abs_logs_path + "/save/*.mp4")[0]
     
     # Define the output GIF file path and convert the mp4 to gif
@@ -350,7 +350,9 @@ def process_text(input_text, userid):
     print("Results packed.......")
 
     # Remove the intermediatory files
-    deleteIntermediateFiles(path=logs_path+"/save/")
+    # deleteIntermediateFiles(path=logs_path+"/save/")
+    # remove the experiment dir for the current run (all files+folders)
+    delete_intermediate_files(path=abs_logs_path)
     print("Deleted intermediatory files......")
 
     # Return the json
@@ -358,6 +360,7 @@ def process_text(input_text, userid):
     json = {"gif_path": gif_path, "zip_path": zip_path}
 
     return json
+
 
 def add_to_port_status(port,api):
     '''
@@ -477,6 +480,14 @@ def pack_results(output_path, asset_folder):
     json = {"zip_path": zip_path+".zip"}
 
     return json
+
+
+def delete_intermediate_files(path: str = Form(...)):
+    try:
+        shutil.rmtree(path)
+    except Exception as e:
+        print(f"A file error occurred: {e}")
+
 
 def deleteIntermediateFiles(path: str = Form(...)):
     # Get a list of all files and subdirectories in the folder
