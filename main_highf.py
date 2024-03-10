@@ -119,7 +119,7 @@ def get_server_port():
     for i,arg in enumerate(sys.argv):
         if arg.startswith("--port"):
             return sys.argv[i+1]
-    return '8000'
+    return '8001'
 
 def convert_and_pack_results(name):
     '''
