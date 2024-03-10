@@ -326,8 +326,6 @@ def process_text(input_text, userid):
     
     
     # Get the path of the mp4 file
-    print(abs_logs_path)
-    print(glob(abs_logs_path + "/save/*.mp4"))
     mp4_path = glob(abs_logs_path + "/save/*.mp4")[0]
     
     # Define the output GIF file path and convert the mp4 to gif
