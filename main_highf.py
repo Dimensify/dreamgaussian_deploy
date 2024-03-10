@@ -77,8 +77,8 @@ def make_gif(input_path,output_path):
     frame_rate = 10
 
     # Resize the video to a smaller size (adjust as needed)
-    target_width = 320
-    target_height = 280
+    target_width = 1536
+    target_height = 512
     method = Image.FASTOCTREE
     colors = 250
     video_clip = video_clip.resize((target_width, target_height))
