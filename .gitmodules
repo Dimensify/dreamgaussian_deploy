@@ -10,3 +10,6 @@
 [submodule "ImageDream"]
 	path = ImageDream
 	url = https://github.com/Dimensify/ImageDream
+[submodule "TripoSR"]
+	path = TripoSR
+	url = https://github.com/Dimensify/TripoSR
