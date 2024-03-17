@@ -136,12 +136,17 @@ def convert_and_pack_results(name, userid):
     # Make the GIF loop infinitely
     make_gif_loop_infinitely(f'output/{userid}/{name}.gif', f'output/{userid}/{name}.gif')
 
+    # Converting to glb
+    print("Converting to glb")
+    subprocess.run(["obj2gltf", "-i", f"logs/{name}.obj", "-o", f"output/{userid}/{name}.glb"])
+
     ## Move png, mtl and obj file to a new folder name
     os.makedirs(f'logs/{name}', exist_ok=True)
     shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
     shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
     shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
     shutil.copy(f'output/{userid}/{name}.gif', f'logs/{name}/{name}.gif')
+
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{userid}/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
@@ -158,7 +163,7 @@ def convert_and_pack_results(name, userid):
             shutil.rmtree(f'logs/{file}')
 
     # Add gif path and zip path to a json format
-    json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip'}
+    json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip', "glb_path": f'output/{userid}/{name}.glb'}
 
     return json
 
