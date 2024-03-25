@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime
 import uvicorn
 import sys 
+from script.ten_second_functions import *
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -114,7 +115,7 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     # Save the modified frames as a new GIF file
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
-def convert_and_pack_results(name, userid):
+def convert_and_pack_results(name, userid, render=True):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
 
@@ -130,18 +131,24 @@ def convert_and_pack_results(name, userid):
     '''
     ## Make a userid directory if it doesn't exist
     os.makedirs(f'output/{userid}', exist_ok=True)
-
-    # Coverting to gif
-    os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{userid}/{name}.gif --wogui --force_cuda_rast")
-    # Make the GIF loop infinitely
-    make_gif_loop_infinitely(f'output/{userid}/{name}.gif', f'output/{userid}/{name}.gif')
+    if render:
+        # Coverting to gif
+        os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{userid}/{name}.gif --wogui --force_cuda_rast")
+        # Make the GIF loop infinitely
+        make_gif_loop_infinitely(f'output/{userid}/{name}.gif', f'output/{userid}/{name}.gif')
+        shutil.copy(f'output/{userid}/{name}.gif', f'logs/{name}/{name}.gif')
+    else:
+        # Move the gif file to the output directory
+        shutil.move(f'logs/{name}.gif', f'output/{userid}/{name}.gif')
 
     ## Move png, mtl and obj file to a new folder name
     os.makedirs(f'logs/{name}', exist_ok=True)
     shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
-    shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
-    shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
-    shutil.copy(f'output/{userid}/{name}.gif', f'logs/{name}/{name}.gif')
+    try:
+        shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
+        shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
+    except:
+        pass
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{userid}/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
