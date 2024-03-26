@@ -137,13 +137,13 @@ def convert_and_pack_results(name, userid, render=True):
         # Make the GIF loop infinitely
         make_gif_loop_infinitely(f'output/{userid}/{name}.gif', f'output/{userid}/{name}.gif')
         shutil.copy(f'output/{userid}/{name}.gif', f'logs/{name}/{name}.gif')
+        ## Move png, mtl and obj file to a new folder name
+        os.makedirs(f'logs/{name}', exist_ok=True)
+        shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
     else:
         # Move the gif file to the output directory
-        shutil.move(f'logs/{name}.gif', f'output/{userid}/{name}.gif')
+        shutil.move(f'logs/{name}/{name}.gif', f'output/{userid}/{name}.gif')
 
-    ## Move png, mtl and obj file to a new folder name
-    os.makedirs(f'logs/{name}', exist_ok=True)
-    shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
     try:
         shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
         shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
@@ -238,12 +238,14 @@ def process_image(input_file: UploadFile, userid: str):
     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
     # Call the Python scripts using subprocess
-    subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-
+    # subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+    # subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
+    print("input_file_path",input_file_path)
+    print("name",name)
+    tripo_image_to_3d(input_file_path, name)
     # Return the json
-    return convert_and_pack_results(name, userid)
+    return convert_and_pack_results(name, userid, render=False)
 
 # Function to process text using process_text.py
 def process_text(input_text, userid: str):
