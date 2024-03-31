@@ -10,6 +10,8 @@ import pandas as pd
 from datetime import datetime
 import uvicorn
 import sys 
+from pathlib import Path
+import hashlib
 from script.ten_second_functions import *
 
 app = FastAPI()
@@ -31,8 +33,17 @@ UPLOAD_DIR = "./dreamgaussian/data"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ## Creating the output directory
-OUTPUT_DIR = "./output"
+OUTPUT_DIR = "./output/lowf"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+## TO BE EDITED WITH MAGIC 3D
+def get_asset_folder(userid, input_text, current_timestamp):
+    unique_id = f"{userid}+{input_text}+{current_timestamp}"
+    model_id = hashlib.md5(unique_id.encode()).hexdigest()
+    
+    return f"{OUTPUT_DIR}/{userid}/{model_id}"
+
 
 ### UTILITIES ###
 @app.get("/get-port")
@@ -115,6 +126,69 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     # Save the modified frames as a new GIF file
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
+
+def convert_and_pack_results_hashid(name, userid, render=True):
+    '''
+    Converts the .obj file to .gif and packs the results into a zip file
+
+    Parameters
+    ----------
+    name: str
+        Name of the .obj file
+
+    Returns
+    -------
+    json: dict
+        Dictionary containing the paths to the GIF and ZIP files
+    '''
+    current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    input_text = name.lower()
+    logs_path = f"logs/{input_text}"
+    abs_logs_path = str(Path(logs_path).resolve())
+    os.makedirs(f'{abs_logs_path}', exist_ok=True)
+
+    asset_folder = get_asset_folder(userid, input_text, current_timestamp)
+    os.makedirs(asset_folder, exist_ok=True)
+
+    if render:
+        # Coverting to gif
+        os.system(f"python -m kiui.render {abs_logs_path}/{name}.obj --save_video {abs_logs_path}/{name}.gif --wogui --force_cuda_rast")
+        # Make the GIF loop infinitely
+        make_gif_loop_infinitely(f'{abs_logs_path}/{name}.gif', f'{abs_logs_path}/{name}.gif')
+        shutil.copy(f'{abs_logs_path}/{name}.gif', f'{asset_folder}/{name}.gif')
+        ## Move png, mtl and obj file to a new folder name
+        os.makedirs(f'{abs_logs_path}/{name}', exist_ok=True)
+        shutil.move(f'{abs_logs_path}/{name}.obj', f'{abs_logs_path}/{name}/{name}.obj')
+    else:
+        # Move the gif file to the output directory
+        shutil.move(f'{abs_logs_path}/{name}/{name}.gif', f'{asset_folder}/{name}.gif')
+
+    try:
+        shutil.move(f'{abs_logs_path}/{name}.mtl', f'{abs_logs_path}/{name}/{name}.mtl')
+        shutil.move(f'{abs_logs_path}/{name}_albedo.png', f'{abs_logs_path}/{name}/{name}_albedo.png')
+    except:
+        pass
+    # Saving the obj, mtl and png files into a zip file
+    shutil.make_archive(f'{asset_folder}/{name}', 'zip', f'{abs_logs_path}/{name}')
+    # Remove the logs/name folder
+    shutil.rmtree(f'{abs_logs_path}/{name}')
+    
+    # Clear all the files in the logs folder
+    for file in os.listdir('{abs_logs_path}'):
+        ## Check if it's a file
+        if os.path.isfile(f'{abs_logs_path}/{file}'):
+            ## Remove the file
+            os.remove(f'{abs_logs_path}/{file}')
+        elif os.path.isdir(f'{abs_logs_path}/{file}'):
+            ## Remove the directory
+            shutil.rmtree(f'{abs_logs_path}/{file}')
+    
+    # Add gif path and zip path to a json format
+    json = {"gif_path": f'{asset_folder}/{name}.gif', "zip_path": f'{asset_folder}/{name}.zip'}
+
+    return json
+
+
 def convert_and_pack_results(name, userid, render=True):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
@@ -163,7 +237,7 @@ def convert_and_pack_results(name, userid, render=True):
         elif os.path.isdir(f'logs/{file}'):
             ## Remove the directory
             shutil.rmtree(f'logs/{file}')
-
+    
     # Add gif path and zip path to a json format
     json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip'}
 
@@ -237,10 +311,6 @@ def process_image(input_file: UploadFile, userid: str):
     # Define the processed image file path
     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
 
-    # Call the Python scripts using subprocess
-    # subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    # subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
-    # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/image_sai.yaml", "input=" + processed_image_path, f"save_path={name}", "force_cuda_rast=True"])
     print("input_file_path",input_file_path)
     print("name",name)
     tripo_image_to_3d(input_file_path, name)
