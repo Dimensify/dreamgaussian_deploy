@@ -309,10 +309,6 @@ def process_image(input_file: UploadFile, userid: str):
         shutil.copyfileobj(input_file.file, f)
 
     # Define the processed image file path
-    processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
-
-    print("input_file_path",input_file_path)
-    print("name",name)
     tripo_image_to_3d(input_file_path, name)
     # Return the json
     return convert_and_pack_results(name, userid, render=False)
