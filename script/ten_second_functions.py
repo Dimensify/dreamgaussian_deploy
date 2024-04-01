@@ -33,7 +33,7 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     # Save the modified frames as a new GIF file
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
-def tripo_image_to_3d(path, obj_name):
+def tripo_image_to_3d(path, obj_name, gen_texture_prompt=None):
     '''
     
     '''
@@ -49,6 +49,13 @@ def tripo_image_to_3d(path, obj_name):
     os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.obj --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
     ## Make the gif loop infinitely
     make_gif_loop_infinitely(f'logs/{obj_name}/{obj_name}.gif', f'logs/{obj_name}/{obj_name}.gif')
+    
+    if not gen_texture_prompt is None:
+        command = f"python TripoSR/triposr-texture-gen/text2texture.py logs/{obj_name}/{obj_name}.obj '{gen_texture_prompt}' --output-dir logs/{obj_name}/texgen"
+        subprocess.run(command, shell=True, cwd="./")
+        os.rename(f'logs/{obj_name}/texgen/mesh-tex.obj', f'logs/{obj_name}/{obj_name}.obj')
+        os.rename(f'logs/{obj_name}/texgen/mesh-tex.mtl', f'logs/{obj_name}/{obj_name}.mtl')
+        os.rename(f'logs/{obj_name}/texgen/mesh-tex.png', f'logs/{obj_name}/{obj_name}_albedo.png')
 
     return f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}/{obj_name}.gif'
     
