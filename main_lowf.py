@@ -752,7 +752,4 @@ async def render_gif(file_path: str = Form(...)):
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 if __name__ == "__main__":
-    # uvicorn.run(app, host="0.0.0.0", port=config.port)
-    input_file = Path("/home/dimensify/dimensify/dreamgaussian_deploy/TripoSR/examples/police_woman.png")
-    userid = "ashutosh@dimensify.ai"
-    process_image(input_file, userid)
+    uvicorn.run(app, host="0.0.0.0", port=config.port)
