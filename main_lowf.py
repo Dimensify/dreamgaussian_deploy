@@ -223,6 +223,11 @@ def convert_and_pack_results(name, userid, render=True):
         shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
     except:
         pass
+      
+    ## Convering to glb file
+    print("Converting to glb")
+    subprocess.run(["obj2gltf", "-i", f"logs/{name}.obj", "-o", f"output/{userid}/{name}.glb"])
+
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{userid}/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
@@ -239,7 +244,7 @@ def convert_and_pack_results(name, userid, render=True):
             shutil.rmtree(f'logs/{file}')
     
     # Add gif path and zip path to a json format
-    json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip'}
+    json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip', "glb_path": f'output/{userid}/{name}.glb'}
 
     return json
 

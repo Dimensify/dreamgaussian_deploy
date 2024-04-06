@@ -147,6 +147,8 @@ def convert_and_pack_results(name):
     shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
     shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
     shutil.copy(f'output/{name}.gif', f'logs/{name}/{name}.gif')
+    ## Converting to glb file
+
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
@@ -269,6 +271,10 @@ def process_image(input_file: UploadFile, input_text: str, userid):
                     "system.exporter_type=mesh-exporter", 
                     "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", ], 
                     cwd="ImageDream/")
+    
+    # Converting to glb
+    glb_path = convert_to_glb(log_path=abs_logs_path, save_path=asset_folder, name = experiment_dir)
+
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
     zip_json = pack_results(output_path= abs_logs_path,  
@@ -284,7 +290,7 @@ def process_image(input_file: UploadFile, input_text: str, userid):
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
-    json = {"gif_path": gif_path, "zip_path": zip_path}
+    json = {"gif_path": gif_path, "zip_path": zip_path, "glb_path": glb_path}
 
     return json
 
@@ -315,7 +321,6 @@ def process_text(input_text, userid):
     abs_logs_path = str(Path(logs_path).resolve())
     
     asset_folder = get_asset_folder(userid, input_text, current_timestamp)
-    
     ## Make the asset folder directory if it doesn't exist
     os.makedirs(asset_folder, exist_ok=True)
 
@@ -343,6 +348,11 @@ def process_text(input_text, userid):
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
 
+    # Converting to glb
+    glb_path = convert_to_glb(log_path=abs_logs_path, save_path=asset_folder, name = experiment_dir)
+
+    # subprocess.run(["obj2gltf", "-i", f"model.obj", "-o", f"model.glb"])
+
     zip_json = pack_results(output_path= abs_logs_path,
                             asset_folder=asset_folder)
     
@@ -357,7 +367,7 @@ def process_text(input_text, userid):
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
-    json = {"gif_path": gif_path, "zip_path": zip_path}
+    json = {"gif_path": gif_path, "zip_path": zip_path, "glb_path": glb_path}
 
     return json
 
@@ -437,6 +447,33 @@ def get_max_steps(yaml_file_path):
     os.chdir(original_directory)
 
     return max_steps_value
+
+def convert_to_glb(log_path,save_path,name):
+    '''
+    Converts the .obj file to .glb
+
+    Parameters
+    ----------
+    log_path: str
+        Path to the .obj file
+    save_path: str
+        Path to save the .glb file
+    name: str
+        Name of the .obj file
+
+    Returns
+    -------
+    str:
+        Path to the .glb file
+    '''
+    yaml_file_path = f"{log_path}/configs/raw.yaml"
+    max_steps = get_max_steps(yaml_file_path)
+
+    folder_path = f"{log_path}/save/it{max_steps}-export/"
+    # Convert to glb
+    subprocess.run(["obj2gltf", "-i", f"{folder_path}/model.obj", "-o", f"{save_path}/{name}.glb"])
+
+    return f"{save_path}/{name}.glb"
 
 
 def pack_results(output_path, asset_folder):
