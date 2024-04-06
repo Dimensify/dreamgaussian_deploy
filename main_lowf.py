@@ -228,6 +228,9 @@ def convert_and_pack_results(name, userid, render=True):
     print("Converting to glb")
     subprocess.run(["obj2gltf", "-i", f"logs/{name}.obj", "-o", f"output/{userid}/{name}.glb"])
 
+    ## Move the glb to logs folder
+    shutil.move(f"output/{userid}/{name}.glb", f"logs/{name}/{name}.glb")
+
     # Saving the obj, mtl and png files into a zip file
     shutil.make_archive(f'output/{userid}/{name}', 'zip', f'logs/{name}')
     # Remove the logs/name folder
