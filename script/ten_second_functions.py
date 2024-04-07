@@ -139,12 +139,11 @@ def tripo_text_to_3d(prompt, obj_name):
     dtype = torch.float16
     camera = None
     batch_size = 1
-    prompt = prompt + '.3D model, White background, Symmetric, Front facing.'
+    prompt = prompt + '.3D model, White background, symmetric, front facing.'
 
     img = t2i(model, 256, prompt, uc, sampler, step=100, scale=10, batch_size=batch_size, ddim_eta=0.0, 
             dtype=dtype, device=device, camera=camera, num_frames=4)
     img = np.concatenate(img, 1)
-
     ## Save the image to logs/{obj_name}/image.png
     img = Image.fromarray(img)
     ## make the logs/{obj_name} directory

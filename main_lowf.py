@@ -357,6 +357,7 @@ def process_text(input_text, userid: str):
     # subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
     # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
     print(save_path)
+    print(input_text)
     tripo_text_to_3d(input_text, save_path)
     # Return the json
     return convert_and_pack_results(save_path, userid, render=False)
