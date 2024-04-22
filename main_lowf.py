@@ -33,7 +33,7 @@ UPLOAD_DIR = "./dreamgaussian/data"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ## Creating the output directory
-OUTPUT_DIR = "./output/lowf"
+OUTPUT_DIR = "output/lowf"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 

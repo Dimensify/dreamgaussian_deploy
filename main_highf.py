@@ -36,7 +36,7 @@ UPLOAD_DIR = "./ImageDream/data"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ## Creating the output directory
-OUTPUT_DIR = "./output"
+OUTPUT_DIR = "output/highf"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 ##Config YAML File
@@ -232,6 +232,11 @@ def process_image(input_file: UploadFile, input_text: str, userid):
     experiment_dir = input_text.replace(" ", "_")
     logs_path = "./ImageDream/outputs/imagedream-sd21-shading/" + experiment_dir
     abs_logs_path = str(Path(logs_path).resolve())
+
+    ## If log file already exists, delete the log file
+    if os.path.exists(abs_logs_path):
+        print("Deleting preexisting logs....")
+        delete_intermediate_files(abs_logs_path)
     
     asset_folder = get_asset_folder(userid, input_text, current_timestamp)
  
@@ -253,10 +258,10 @@ def process_image(input_file: UploadFile, input_text: str, userid):
                     "system.prompt_processor.prompt=" + input_text,
                     "system.prompt_processor.image_path=./data/" + input_file.filename, 
                     "system.guidance.ckpt_path=./extern/ImageDream/release_models/ImageDream/sd-v2.1-base-4view-ipmv.pt",
-                    "system.guidance.config_path=./extern/ImageDream/imagedream/configs/sd_v2_base_ipmv.yaml", "exp_root_dir=" + abs_logs_path], 
+                    "system.guidance.config_path=./extern/ImageDream/imagedream/configs/sd_v2_base_ipmv.yaml", "exp_dir=" + abs_logs_path], 
                     cwd="ImageDream/")
     # Get the path of the mp4 file
-    mp4_path = glob(logs_path + "/save/*.mp4")[0]
+    mp4_path = glob(abs_logs_path + "/save/*.mp4")[0]
     # Define the output GIF file path and convert the mp4 to gif
     # gif_path = os.path.join(OUTPUT_DIR, f"{directory_name}.gif")
     gif_path = os.path.join(f"{asset_folder}/{experiment_dir}.gif")
@@ -269,7 +274,7 @@ def process_image(input_file: UploadFile, input_text: str, userid):
                     "system.prompt_processor.prompt=" + input_text, 
                     "system.prompt_processor.image_path=./data/" + input_file.filename,
                     "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", ], 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=64", ], 
                     cwd="ImageDream/")
     
     # Converting to glb
@@ -319,6 +324,11 @@ def process_text(input_text, userid):
     experiment_dir = input_text.replace(" ", "_")
     logs_path = "./MVDream-threestudio/outputs/mvdream-sd21-rescale0.5-shading/" + experiment_dir
     abs_logs_path = str(Path(logs_path).resolve())
+
+    ## If log file already exists, delete the log file
+    if os.path.exists(abs_logs_path):
+        print("Deleting preexisting logs....")
+        delete_intermediate_files(abs_logs_path)
     
     asset_folder = get_asset_folder(userid, input_text, current_timestamp)
     ## Make the asset folder directory if it doesn't exist
@@ -342,7 +352,7 @@ def process_text(input_text, userid):
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--export", "--gpu", "0", 
                     "resume=" + abs_logs_path + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=256", 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=64", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
