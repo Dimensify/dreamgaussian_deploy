@@ -89,6 +89,7 @@ def make_gif(input_path,output_path):
     for frame in video_clip.iter_frames(fps=frame_rate, dtype='uint8'):
         im = Image.fromarray(frame)
         im = im.quantize(colors=colors, method=method, dither=0)
+        im = im.crop((0,0,target_width//3,target_height)).resize((512, 512))
         gif_frames.append(im)
 
     # Save the GIF using Pillow
