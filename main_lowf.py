@@ -12,8 +12,6 @@ import uvicorn
 import sys 
 from pathlib import Path
 import hashlib
-from transformers import BlipProcessor, BlipForConditionalGeneration
-
 from script.ten_second_functions import *
 
 app = FastAPI()
@@ -35,41 +33,11 @@ UPLOAD_DIR = "./dreamgaussian/data"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ## Creating the output directory
-OUTPUT_DIR = "./output/lowf"
+OUTPUT_DIR = "output/lowf"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-## Generate Caption from Image
-def generate_captions(image_path):
-    '''
-    Generates the caption from the image using transformers BLIP
-
-    Parameters
-    ----------
-    image_path: str
-        Path to the image
-
-    Returns
-    -------
-    str:
-        Caption generated from the image
-        
-    '''
-    processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-    model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to("cuda")
-
-    # Read the image
-    image = Image.open(image_path).convert("RGB")
-
-    # Unconditional image captioning 
-    inputs = processor(image, return_tensors="pt").to("cuda")
-
-    out = model.generate(**inputs)
-    text = processor.decode(out[0], skip_special_tokens=True)
-
-    return text
-
-
+## TO BE EDITED WITH MAGIC 3D
 def get_asset_folder(userid, input_text, current_timestamp):
     unique_id = f"{userid}+{input_text}+{current_timestamp}"
     model_id = hashlib.md5(unique_id.encode()).hexdigest()
@@ -159,7 +127,7 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
 
-def convert_and_pack_results(name, userid, render=True):
+def convert_and_pack_results_hashid(name, userid, render=True):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
 
@@ -187,23 +155,26 @@ def convert_and_pack_results(name, userid, render=True):
         os.system(f"python -m kiui.render {abs_logs_path}/{name}.obj --save_video {abs_logs_path}/{name}.gif --wogui --force_cuda_rast")
         # Make the GIF loop infinitely
         make_gif_loop_infinitely(f'{abs_logs_path}/{name}.gif', f'{abs_logs_path}/{name}.gif')
-    
-    shutil.copy(f'{abs_logs_path}/{name}.gif', f'{asset_folder}/{name}.gif')
-    os.makedirs(f'{abs_logs_path}/tmp', exist_ok=True)
-    shutil.move(f'{abs_logs_path}/{name}.obj', f'{abs_logs_path}/tmp/{name}.obj')
+        shutil.copy(f'{abs_logs_path}/{name}.gif', f'{asset_folder}/{name}.gif')
+        ## Move png, mtl and obj file to a new folder name
+        os.makedirs(f'{abs_logs_path}/{name}', exist_ok=True)
+        shutil.move(f'{abs_logs_path}/{name}.obj', f'{abs_logs_path}/{name}/{name}.obj')
+    else:
+        # Move the gif file to the output directory
+        shutil.move(f'{abs_logs_path}/{name}/{name}.gif', f'{asset_folder}/{name}.gif')
 
     try:
-        shutil.move(f'{abs_logs_path}/{name}.mtl', f'{abs_logs_path}/tmp/{name}.mtl')
-        shutil.move(f'{abs_logs_path}/{name}_albedo.png', f'{abs_logs_path}/tmp/{name}_albedo.png')
+        shutil.move(f'{abs_logs_path}/{name}.mtl', f'{abs_logs_path}/{name}/{name}.mtl')
+        shutil.move(f'{abs_logs_path}/{name}_albedo.png', f'{abs_logs_path}/{name}/{name}_albedo.png')
     except:
         pass
     # Saving the obj, mtl and png files into a zip file
-    shutil.make_archive(f'{asset_folder}/{name}', 'zip', f'{abs_logs_path}/tmp')
+    shutil.make_archive(f'{asset_folder}/{name}', 'zip', f'{abs_logs_path}/{name}')
     # Remove the logs/name folder
-    shutil.rmtree(f'{abs_logs_path}/tmp')
+    shutil.rmtree(f'{abs_logs_path}/{name}')
     
     # Clear all the files in the logs folder
-    for file in os.listdir(f'{abs_logs_path}'):
+    for file in os.listdir('{abs_logs_path}'):
         ## Check if it's a file
         if os.path.isfile(f'{abs_logs_path}/{file}'):
             ## Remove the file
@@ -211,8 +182,6 @@ def convert_and_pack_results(name, userid, render=True):
         elif os.path.isdir(f'{abs_logs_path}/{file}'):
             ## Remove the directory
             shutil.rmtree(f'{abs_logs_path}/{file}')
-        if Path(abs_logs_path).exists():
-            shutil.rmtree(f'{abs_logs_path}')
     
     # Add gif path and zip path to a json format
     json = {"gif_path": f'{asset_folder}/{name}.gif', "zip_path": f'{asset_folder}/{name}.zip'}
@@ -220,7 +189,7 @@ def convert_and_pack_results(name, userid, render=True):
     return json
 
 
-def convert_and_pack_results_old(name, userid, render=True):
+def convert_and_pack_results(name, userid, render=True):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
 
@@ -235,42 +204,61 @@ def convert_and_pack_results_old(name, userid, render=True):
         Dictionary containing the paths to the GIF and ZIP files
     '''
     ## Make a userid directory if it doesn't exist
-    os.makedirs(f'output/{userid}', exist_ok=True)
+    current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    input_text = name.lower()
+    logs_path = f"logs/"
+    abs_logs_path = str(Path(logs_path).resolve())
+    print(logs_path)
+    print(f"{abs_logs_path}/{name}.gif")
+    os.makedirs(f'{abs_logs_path}', exist_ok=True)
+
+    asset_folder = get_asset_folder(userid, input_text, current_timestamp)
+    os.makedirs(asset_folder, exist_ok=True)
+
     if render:
         # Coverting to gif
-        os.system(f"python -m kiui.render logs/{name}.obj --save_video output/{userid}/{name}.gif --wogui --force_cuda_rast")
+        os.system(f"python -m kiui.render {abs_logs_path}/{name}.obj --save_video {abs_logs_path}/{name}.gif --wogui --force_cuda_rast")
         # Make the GIF loop infinitely
-        make_gif_loop_infinitely(f'output/{userid}/{name}.gif', f'output/{userid}/{name}.gif')
-        shutil.copy(f'output/{userid}/{name}.gif', f'logs/{name}/{name}.gif')
+        make_gif_loop_infinitely(f'{abs_logs_path}/{name}.gif', f'{abs_logs_path}/{name}.gif')
+        shutil.copy(f'{abs_logs_path}/{name}.gif', f'{asset_folder}/{name}.gif')
         ## Move png, mtl and obj file to a new folder name
-        os.makedirs(f'logs/{name}', exist_ok=True)
-        shutil.move(f'logs/{name}.obj', f'logs/{name}/{name}.obj')
+        os.makedirs(f'{abs_logs_path}/{name}', exist_ok=True)
+        shutil.move(f'{abs_logs_path}/{name}.obj', f'{abs_logs_path}/{name}/{name}.obj')
     else:
         # Move the gif file to the output directory
-        shutil.move(f'logs/{name}/{name}.gif', f'output/{userid}/{name}.gif')
+        shutil.move(f'{abs_logs_path}/{name}/{name}.gif', f'{asset_folder}/{name}.gif')
 
     try:
-        shutil.move(f'logs/{name}.mtl', f'logs/{name}/{name}.mtl')
-        shutil.move(f'logs/{name}_albedo.png', f'logs/{name}/{name}_albedo.png')
+        shutil.move(f'{abs_logs_path}/{name}.mtl', f'{abs_logs_path}/{name}/{name}.mtl')
+        shutil.move(f'{abs_logs_path}/{name}_albedo.png', f'{abs_logs_path}/{name}/{name}_albedo.png')
     except:
         pass
-    # Saving the obj, mtl and png files into a zip file
-    shutil.make_archive(f'output/{userid}/{name}', 'zip', f'logs/{name}')
+      
+    ## Convering to glb file
+    print("Converting to glb")
+    subprocess.run(["obj2gltf", "-i", f"{abs_logs_path}/{name}/{name}.obj", "-o", f"{asset_folder}/{name}.glb"])
+
+    ## Move the glb and gif to logs folder
+    shutil.copy(f"{asset_folder}/{name}.glb", f"{abs_logs_path}/{name}/{name}.glb")
+    shutil.copy(f"{asset_folder}/{name}.gif", f"{abs_logs_path}/{name}/{name}.gif")
+
+    # Saving the logs folder into a zip file
+    shutil.make_archive(f'{asset_folder}/{name}', 'zip', f'{abs_logs_path}/{name}')
     # Remove the logs/name folder
-    shutil.rmtree(f'logs/{name}')
+    shutil.rmtree(f'{abs_logs_path}/{name}')
     
     # Clear all the files in the logs folder
-    for file in os.listdir('logs'):
+    for file in os.listdir(f'{abs_logs_path}'):
         ## Check if it's a file
-        if os.path.isfile(f'logs/{file}'):
+        if os.path.isfile(f'{abs_logs_path}/{file}'):
             ## Remove the file
-            os.remove(f'logs/{file}')
-        elif os.path.isdir(f'logs/{file}'):
+            os.remove(f'{abs_logs_path}/{file}')
+        elif os.path.isdir(f'{abs_logs_path}/{file}'):
             ## Remove the directory
-            shutil.rmtree(f'logs/{file}')
+            shutil.rmtree(f'{abs_logs_path}/{file}')
     
     # Add gif path and zip path to a json format
-    json = {"gif_path": f'output/{userid}/{name}.gif', "zip_path": f'output/{userid}/{name}.zip'}
+    json = {"gif_path": f'{asset_folder}/{name}.gif', "zip_path": f'{asset_folder}/{name}.zip', "glb_path": f'{asset_folder}/{name}.glb'}
 
     return json
 
@@ -326,32 +314,21 @@ def process_image(input_file: UploadFile, userid: str):
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
-    # # Remove - and spaces from the file name
-    # input_file.filename = input_file.filename.replace(' ', '_').replace('-', '_')
-    # ## Add date time as a suffix to the file name
-    # input_file.filename = input_file.filename.split('.')[0] + '_' + datetime.now().strftime("%Y%m%d%H%M%S") + '.' + input_file.filename.split('.')[1]
-    # # Define the output file name without extension
-    # name = os.path.splitext(input_file.filename)[0]
+    # Remove - and spaces from the file name
+    input_file.filename = input_file.filename.replace(' ', '_').replace('-', '_')
+    ## Add date time as a suffix to the file name
+    input_file.filename = input_file.filename.split('.')[0] + '_' + datetime.now().strftime("%Y%m%d%H%M%S") + '.' + input_file.filename.split('.')[1]
+    # Define the output file name without extension
+    name = os.path.splitext(input_file.filename)[0]
     
-    # ## Add date time as a suffix to the file name
-    # # Save the uploaded image
-    # input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
-    # with open(input_file_path, "wb") as f:
-    #     shutil.copyfileobj(input_file.file, f)
+    ## Add date time as a suffix to the file name
+    # Save the uploaded image
+    input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
+    with open(input_file_path, "wb") as f:
+        shutil.copyfileobj(input_file.file, f)
 
-    # # Define the processed image file path
-    # processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
-    
-    name = input_file.stem.replace(' ', '_').replace('-', '_')
-    input_file_path = os.path.join(UPLOAD_DIR, input_file.name)
-    shutil.copyfile(input_file, input_file_path)
-
-    print("input_file_path",input_file_path)
-    print("name",name)
-    caption = None
-    # caption = generate_captions(input_file_path)
-
-    tripo_image_to_3d(input_file_path, name, gen_texture_prompt=caption)
+    # Define the processed image file path
+    tripo_image_to_3d(input_file_path, name)
     # Return the json
     return convert_and_pack_results(name, userid, render=False)
 
@@ -377,11 +354,13 @@ def process_text(input_text, userid: str):
     save_path = save_path + '_' + datetime.now().strftime("%Y%m%d%H%M%S")
     # Replace this with the actual command to process the text
     # For example, you can use subprocess to run your Python script
-    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
-    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
-
+    # subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
+    # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
+    print(save_path)
+    print(input_text)
+    tripo_text_to_3d(input_text, save_path)
     # Return the json
-    return convert_and_pack_results(save_path, userid)
+    return convert_and_pack_results(save_path, userid, render=False)
 
 def add_to_port_status(port,api):
     '''
@@ -432,7 +411,7 @@ def remove_from_port_status(port):
 async def dummyMethod(text:str = Form(...)):
     try:
         json = {"res": f'suffessfully', "done": f'processed'}
-        return json;
+        return json
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process dummy method: {str(e)}")
@@ -510,42 +489,42 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
         remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
-@app.post("/upload-image-text-swagger/")
-async def process_image_text_endpoint_swagger(image: UploadFile, text: str = Form(...)):
-    '''
-    Processes the uploaded image and converts to 3D to render on Swagger UI
+# @app.post("/upload-image-text-swagger/")
+# async def process_image_text_endpoint_swagger(image: UploadFile, text: str = Form(...)):
+#     '''
+#     Processes the uploaded image and converts to 3D to render on Swagger UI
 
-    Parameters
-    ----------
-    image: UploadFile
-        Uploaded image file
+#     Parameters
+#     ----------
+#     image: UploadFile
+#         Uploaded image file
 
-    text: str
-        Text to be processed
+#     text: str
+#         Text to be processed
 
-    Returns
-    -------
-    FileResponse:
-        Returns the processed GIF file and renders it directly on Swagger UI
-    '''
-    # port = get_server_port()
-    try:
-        # Add log to port_status.csv
-        # add_to_port_status(port, 'upload-image-text-swagger')
-        create_busy_file()
-        # Process the image
-        path = process_textimage(image, text)
-        # Remove log from port_status.csv
-        # remove_from_port_status(port)
-        remove_busy_file()
-        # Return the processed GIF
-        return FileResponse(path['gif_path'], media_type='image/gif')
+#     Returns
+#     -------
+#     FileResponse:
+#         Returns the processed GIF file and renders it directly on Swagger UI
+#     '''
+#     # port = get_server_port()
+#     try:
+#         # Add log to port_status.csv
+#         # add_to_port_status(port, 'upload-image-text-swagger')
+#         create_busy_file()
+#         # Process the image
+#         path = process_textimage(image, text)
+#         # Remove log from port_status.csv
+#         # remove_from_port_status(port)
+#         remove_busy_file()
+#         # Return the processed GIF
+#         return FileResponse(path['gif_path'], media_type='image/gif')
     
-    except Exception as e:
-        # Remove log from port_status.csv
-        # remove_from_port_status(port)
-        remove_busy_file()
-        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+#     except Exception as e:
+#         # Remove log from port_status.csv
+#         # remove_from_port_status(port)
+#         remove_busy_file()
+#         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/upload-image-lowf/")
 async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)):
@@ -617,42 +596,42 @@ async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(.
         remove_busy_file()
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
-@app.post("/upload-image-text-lowf/")
-async def process_image_text_endpoint_json(image: UploadFile, text: str = Form(...)):
-    '''
-    Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
+# @app.post("/upload-image-text-lowf/")
+# async def process_image_text_endpoint_json(image: UploadFile, text: str = Form(...)):
+#     '''
+#     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
-    Parameters
-    ----------
-    image: UploadFile
-        Uploaded image file
+#     Parameters
+#     ----------
+#     image: UploadFile
+#         Uploaded image file
 
-    text: str
-        Text to be processed
+#     text: str
+#         Text to be processed
 
-    Returns
-    -------
-    json: dict
-        Dictionary containing the paths to the GIF and ZIP files
-    '''
-    # port = get_server_port()
-    try:
-        # Add log to port_status.csv
-        # add_to_port_status(port, 'upload-image-text-json')
-        create_busy_file()
-        # Process the image
-        path = process_textimage(image, text)
-        # Remove log from port_status.csv
-        # remove_from_port_status(port)
-        remove_busy_file()
-        # Return the file paths in json format
-        return path
+#     Returns
+#     -------
+#     json: dict
+#         Dictionary containing the paths to the GIF and ZIP files
+#     '''
+#     # port = get_server_port()
+#     try:
+#         # Add log to port_status.csv
+#         # add_to_port_status(port, 'upload-image-text-json')
+#         create_busy_file()
+#         # Process the image
+#         path = process_textimage(image, text)
+#         # Remove log from port_status.csv
+#         # remove_from_port_status(port)
+#         remove_busy_file()
+#         # Return the file paths in json format
+#         return path
     
-    except Exception as e:
-        # Remove log from port_status.csv
-        # remove_from_port_status(port)
-        remove_busy_file()
-        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+#     except Exception as e:
+#         # Remove log from port_status.csv
+#         # remove_from_port_status(port)
+#         remove_busy_file()
+#         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/get-zip/")
 async def get_zip(file_path: str = Form(...)):
