@@ -307,7 +307,7 @@ def process_image(input_file: UploadFile, input_text: str, userid):
                     "system.prompt_processor.prompt=" + input_text, 
                     "system.prompt_processor.image_path=./data/" + input_file.filename,
                     "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=64", ], 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=128", ], 
                     cwd="ImageDream/")
     
     # Converting to glb
@@ -388,7 +388,7 @@ def process_text(input_text, userid, taskid):
     # Running the export model
     subprocess.run(["python", "launch.py", "--config", text_to_3D_shading_mvdream_yaml, "--export", "--gpu", "0", 
                     "resume=" + abs_logs_path + "/ckpts/last.ckpt", "system.exporter_type=mesh-exporter", 
-                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=64", 
+                    "system.geometry.isosurface_method=mc-cpu", "system.geometry.isosurface_resolution=128", 
                     "system.prompt_processor.prompt=" + input_text], cwd="MVDream-threestudio/")
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
