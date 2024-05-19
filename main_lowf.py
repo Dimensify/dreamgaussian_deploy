@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 import hashlib
 from script.ten_second_functions import *
+from glob import glob
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -236,7 +237,8 @@ def convert_and_pack_results(name, userid, render=True):
       
     ## Convering to glb file
     print("Converting to glb")
-    subprocess.run(["obj2gltf", "-i", f"{abs_logs_path}/{name}/{name}.obj", "-o", f"{asset_folder}/{name}.glb"])
+    obj_file_name = glob(f"{abs_logs_path}/{name}/*.obj")[0]
+    subprocess.run(["obj2gltf", "-i", obj_file_name, "-o", f"{asset_folder}/{name}.glb"])
 
     ## Move the glb and gif to logs folder
     shutil.copy(f"{asset_folder}/{name}.glb", f"{abs_logs_path}/{name}/{name}.glb")
@@ -358,7 +360,7 @@ def process_text(input_text, userid: str):
     # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
     print(save_path)
     print(input_text)
-    tripo_text_to_3d(input_text, save_path)
+    text_to_3d(input_text, save_path, method='tripo')
     # Return the json
     return convert_and_pack_results(save_path, userid, render=False)
 

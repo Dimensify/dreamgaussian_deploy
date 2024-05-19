@@ -13,3 +13,6 @@
 [submodule "TripoSR"]
 	path = TripoSR
 	url = https://github.com/Dimensify/TripoSR
+[submodule "CRM"]
+	path = CRM
+	url = https://github.com/thu-ml/CRM

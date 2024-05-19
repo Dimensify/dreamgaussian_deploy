@@ -7,8 +7,15 @@ import torch
 import numpy as np
 from mvdream.ldm.models.diffusion.ddim import DDIMSampler
 from mvdream.model_zoo import build_model
+import sys
+import glob
+
+# crm_directory = os.path.join(os.getcwd(), 'CRM')
+# sys.path.append(crm_directory)
+# from run import *
 
 ## Fetching the model and sampler globally to avoid reload
+print("### LOADING MVDREAM ###")
 model = build_model("sd-v2.1-base-4view")
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.device = device
@@ -17,6 +24,31 @@ model.eval()
 sampler = DDIMSampler(model)
 uc = model.get_learned_conditioning( [""] ).to(device)
 
+### Creating CRM Pipeline
+# print("### LOADING CRM ###")
+# crm_path = hf_hub_download(repo_id="Zhengyi/CRM", filename="CRM.pth")
+# specs = json.load(open(f"{crm_directory}/configs/specs_objaverse_total.json"))
+# crm_model = CRM(specs).to("cuda")
+# crm_model.load_state_dict(torch.load(crm_path, map_location = "cuda"), strict=False)
+# stage1_config = OmegaConf.load(f"{crm_directory}/configs/nf7_v3_SNR_rd_size_stroke.yaml").config
+# stage2_config = OmegaConf.load(f"{crm_directory}/configs/stage2-v2-snr.yaml").config
+# stage2_sampler_config = stage2_config.sampler
+# stage1_sampler_config = stage1_config.sampler
+# stage1_model_config = stage1_config.models
+# stage2_model_config = stage2_config.models
+# stage1_model_config.config = crm_directory + '/' + stage1_model_config.config
+# stage2_model_config.config = crm_directory + '/' + stage2_model_config.config
+# xyz_path = hf_hub_download(repo_id="Zhengyi/CRM", filename="ccm-diffusion.pth")
+# pixel_path = hf_hub_download(repo_id="Zhengyi/CRM", filename="pixel-diffusion.pth")
+# stage1_model_config.resume = pixel_path
+# stage2_model_config.resume = xyz_path
+
+# pipeline = TwoStagePipeline(
+#     stage1_model_config,
+#     stage2_model_config,
+#     stage1_sampler_config,
+#     stage2_sampler_config,
+# )
 
 def t2i(model, image_size, prompt, uc, sampler, step=20, scale=7.5, batch_size=8, ddim_eta=0., dtype=torch.float32, device="cuda", camera=None, num_frames=1):
     '''
@@ -83,6 +115,47 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     # Save the modified frames as a new GIF file
     frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
 
+def crm_image_to_3d(path, obj_name):
+    '''
+    Converts an image to a 3D object and renders it as a GIF
+
+    Parameters
+    ----------
+    path: str
+        Path to the image file
+    obj_name: str
+        Name of the object
+
+    Returns
+    -------
+    str
+        Path to the 3D object file
+    str
+        Path to the GIF file
+    '''
+    path = os.path.abspath(path)
+    logpath = os.path.abspath(f'./logs')
+    ## Run the command to convert the image to 3D: python run.py examples/chair.png --output-dir output/ --model-save-format glb
+    command = f'python run.py --inputdir {path} --outdir {logpath}/{obj_name}/'
+    subprocess.run(command, shell=True, cwd="./CRM")
+    ## unzip output3d.zip
+    os.system(f"unzip {logpath}/{obj_name}/output3d.zip -d {logpath}/{obj_name}/")
+    temp_file_name = glob.glob(f'logs/{obj_name}/*.obj')[0].split('/')[-1].split('.')[0]
+
+    ## Removing the logs
+    os.remove(f'{logpath}/{obj_name}/pixel_images.png')
+    os.remove(f'{logpath}/{obj_name}/preprocessed_image.png')
+    os.remove(f'{logpath}/{obj_name}/xyz_images.png')
+    os.remove(f'{logpath}/{obj_name}/output3d.zip')
+
+    ## Rendering to a gif
+    os.system(f"python -m kiui.render {logpath}/{obj_name}/{temp_file_name}.obj --save_video {logpath}/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
+    ## Make the gif loop infinitely
+    make_gif_loop_infinitely(f'{logpath}/{obj_name}/{obj_name}.gif', f'{logpath}/{obj_name}/{obj_name}.gif')
+
+    return f'logs/{obj_name}/{temp_file_name}.obj', f'logs/{obj_name}/{obj_name}.gif'
+    
+
 def tripo_image_to_3d(path, obj_name):
     '''
     Converts an image to a 3D object and renders it as a GIF
@@ -117,7 +190,7 @@ def tripo_image_to_3d(path, obj_name):
     return f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}/{obj_name}.gif'
     
 
-def tripo_text_to_3d(prompt, obj_name):
+def text_to_3d(prompt, obj_name, method='tripo'):
     '''
     Converts a text to a 3D object and renders it as a GIF
 
@@ -151,9 +224,13 @@ def tripo_text_to_3d(prompt, obj_name):
     img.save(f'logs/{obj_name}/image.png')
 
     ## Use image to 3D function
-    return tripo_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
+    if method == 'tripo':
+        return tripo_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
+    elif method == 'crm':
+        return crm_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
 
 if __name__ == '__main__':
     prompt = input("Enter a prompt: ")
-    tripo_text_to_3d(prompt, 'test_obj')
+    text_to_3d(prompt, 'test_obj', method='crm')
+    # crm_image_to_3d('CRM/examples/kunkun.webp','testobj')
 
