@@ -53,6 +53,41 @@ os.environ['PYTHONPATH'] = os.pathsep.join([os.environ.get('PYTHONPATH', ''), ne
 
 
 ### UTILITIES ###
+def save_in_db(input_text, userid, taskid, gif_path, glb_path, zip_path, time_taken):
+    '''
+    Save the model details in database.
+
+    Parameters
+    ----------
+    input_text: str
+        Text to be processed
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
+    gif_path:
+        path of the generated gif file
+    glb_path: 
+        path of generated model file
+    zip_path: 
+        path of the generated files
+    time_taken: str
+        Total time taken for generation
+    '''
+    # Save to database
+    db_connection = connect_to_database()
+    u_id = get_user_id_by_email(connection = db_connection, email=userid)
+    if u_id is not None:
+        user_library_id = insert_data_to_user_library(connection=db_connection, 
+                                                  gif_location=gif_path, model_location=glb_path, 
+                                                  task_id=taskid, zip_location=zip_path, 
+                                                  user_id=u_id)
+        insert_data_to_model_details(connection=db_connection, fidelity="HIGH", 
+                                       file_format="obj, glb", time_taken=time_taken, 
+                                       input_text=input_text, user_library_id=user_library_id)
+        
+    db_connection.close()
+
 def calculate_time_taken(duration):
     '''
     Calculate the time taken and format it as a string.
@@ -240,7 +275,7 @@ def get_asset_folder(userid, input_text, current_timestamp):
     return f"{OUTPUT_DIR}/{userid}/{model_id}"
 
 
-def process_image(input_file: UploadFile, input_text: str, userid):
+def process_image(input_file: UploadFile, input_text: str, userid, taskid):
     '''
     Processes the uploaded image and the text description and converts to 3D
 
@@ -252,12 +287,15 @@ def process_image(input_file: UploadFile, input_text: str, userid):
         Text to be processed
     userid: ID
         Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     -------
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
+    start_time = time.time()  # Get the current time before executing the code
 
     ## Remove all special characters from the save path
     current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -325,6 +363,15 @@ def process_image(input_file: UploadFile, input_text: str, userid):
     # remove the experiment dir for the current run (all files+folders)
     delete_intermediate_files(path=abs_logs_path)
     print("Deleted intermediatory files......")
+
+    end_time = time.time()  # Get the current time after executing the code
+    duration = end_time - start_time  # Calculate the duration in seconds
+    time_taken = calculate_time_taken(duration=duration)
+
+    # Save to database
+    save_in_db(input_text=input_text, userid=userid, taskid=taskid,
+               gif_path=gif_path, zip_path=zip_path, glb_path=glb_path,
+               time_taken=time_taken)
     
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
@@ -416,18 +463,9 @@ def process_text(input_text, userid, taskid):
     time_taken = calculate_time_taken(duration=duration)
 
     # Save to database
-    db_connection = connect_to_database()
-    u_id = get_user_id_by_email(connection = db_connection, email=userid)
-    if u_id is not None:
-        user_library_id = insert_data_to_user_library(connection=db_connection, 
-                                                  gif_location=gif_path, model_location=glb_path, 
-                                                  task_id=taskid, zip_location=zip_path, 
-                                                  user_id=u_id)
-        insert_data_to_model_details(connection=db_connection, fidelity="HIGH", 
-                                       file_format="obj, glb", time_taken=time_taken, 
-                                       input_text=input_text, user_library_id=user_library_id)
-        
-    db_connection.close()
+    save_in_db(input_text=input_text, userid=userid, taskid=taskid,
+               gif_path=gif_path, zip_path=zip_path, glb_path=glb_path,
+               time_taken=time_taken)
 
     # Return the json
     # json = {"gif_path": gif_path, "zip_path": None}
@@ -709,7 +747,7 @@ async def generate_caption(image: UploadFile):
 
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
-async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...), userid: str = Form(...)):
+async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...), userid: str = Form(...), taskid: str = Form(...)):
     '''
     Processes the uploaded image,text and converts to 3D to render on Swagger UI
 
@@ -721,6 +759,8 @@ async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...
         Text to be processed
     userid: ID
         Authenticated user unique identifier 
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     ------- 
@@ -732,7 +772,7 @@ async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...
     try:
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-swagger')
-        path = process_image(image,text,userid)        
+        path = process_image(image,text,userid,taskid)        
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         # return FileResponse(path['gif_path'], media_type='image/gif')
@@ -745,12 +785,14 @@ async def process_image_endpoint_swagger(image: UploadFile, text: str = Form(...
         if not download_path.is_file():
             return {"error": "Download file not found"}
         
+        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         # Return the FileResponse with the file path and name
         return FileResponse(zip_path, media_type="application/octet-stream", filename=download_path.name)
 
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
@@ -803,7 +845,7 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
-        send_email(send_email=False, userid=userid, status={'result':'FAILED'})
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 
@@ -833,13 +875,13 @@ async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(.
         send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         return path
     except Exception as e:
-        send_email(send_email=False, userid=userid, status={'result':'FAILED'})
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 
 # Route to handle image uploads and return the paths of model files as GIF and ZIP
 @app.post("/upload-image-highf/")
-async def process_image_endpoint_json(image: UploadFile, text: str = Form(...), userid: str = Form(...)):
+async def process_image_endpoint_json(image: UploadFile, text: str = Form(...), userid: str = Form(...), taskid: str = Form(...)):
     '''
     Processes the uploaded image,text and converts to 3D
 
@@ -851,6 +893,8 @@ async def process_image_endpoint_json(image: UploadFile, text: str = Form(...), 
         Text to be processed
     userid: ID
         Authenticated user unique identifier 
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     ------- 
@@ -859,10 +903,12 @@ async def process_image_endpoint_json(image: UploadFile, text: str = Form(...), 
     '''
     
     try:
-        path = process_image(image,text,userid)        
+        path = process_image(image,text,userid,taskid)   
+        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})     
         return path
         
     except Exception as e:
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")    
 
 

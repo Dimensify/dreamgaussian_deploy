@@ -9,6 +9,7 @@ from mvdream.ldm.models.diffusion.ddim import DDIMSampler
 from mvdream.model_zoo import build_model
 import sys
 import glob
+import bpy 
 
 # crm_directory = os.path.join(os.getcwd(), 'CRM')
 # sys.path.append(crm_directory)
@@ -49,6 +50,89 @@ uc = model.get_learned_conditioning( [""] ).to(device)
 #     stage1_sampler_config,
 #     stage2_sampler_config,
 # )
+
+def convert_to_standard_obj(input_path, output_path):
+    """
+    Convert color on vertex .obj into standard .obj with unwrapped UV and .png texture file.
+    The output files will have the same base name as the input file.
+
+    :param input_path: Path to the input .obj file
+    :param output_path: Path to the output directory
+    """
+    
+    def clear_scene():
+        bpy.ops.object.select_all(action="SELECT")
+        bpy.ops.object.delete()
+    
+    clear_scene()
+
+    # Extract the base name of the input file without extension
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+
+    # Import the .obj file
+    bpy.ops.wm.obj_import(filepath=input_path, directory=os.path.split(input_path)[0], files=[{"name": os.path.split(input_path)[1]}])
+    bpy.context.object.rotation_euler[0] = 0
+    obj = bpy.context.active_object
+
+    # Add UV map
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.smart_project()
+    bpy.ops.object.editmode_toggle()
+
+    # Create vertex color material
+    mat = bpy.data.materials.new(name="VertexColor")
+    mat.use_nodes = True
+    vc = mat.node_tree.nodes.new('ShaderNodeVertexColor')
+    vc.name = "vc_node"
+    vc.layer_name = "Color"
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    mat.node_tree.links.new(vc.outputs[0], bsdf.inputs[0])
+    obj.data.materials.append(mat)
+
+    # Bake the texture
+    image_name = base_name + '_BakedTexture'
+    img = bpy.data.images.new(image_name, 1024, 1024)
+
+    bpy.context.scene.render.engine = 'CYCLES'
+    bpy.context.scene.cycles.bake_type = 'DIFFUSE'
+    bpy.context.scene.render.bake.use_pass_indirect = False
+    bpy.context.scene.render.bake.use_pass_direct = False
+    bpy.context.scene.render.bake.use_selected_to_active = False
+
+    for mat in obj.data.materials:
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        texture_node = nodes.new('ShaderNodeTexImage')
+        texture_node.name = 'Bake_node'
+        texture_node.select = True
+        nodes.active = texture_node
+        texture_node.image = img
+    
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.bake(type='DIFFUSE', save_mode='EXTERNAL')
+
+    # Remove the original vertex color node
+    for mat in obj.data.materials:
+        vc = mat.node_tree.nodes['vc_node']
+        mat.node_tree.nodes.remove(vc)
+
+    os.makedirs(output_path, exist_ok=True)
+
+    # Save the baked texture
+    img.save_render(filepath=f'{output_path}/{base_name}_texture_kd.png')
+
+    # Export the .obj and .mtl files
+    obj_output_path = f"{output_path}/{base_name}.obj"
+    if bpy.app.version[0] >= 4:
+        bpy.ops.wm.obj_export(filepath=obj_output_path)
+    else:
+        bpy.ops.export_scene.obj(filepath=obj_output_path)
+
+    mtl_output_path = f"{output_path}/{base_name}.mtl"
+    with open(mtl_output_path, 'a') as f:
+        f.write('map_Kd {}_texture_kd.png'.format(base_name))
+
 
 def t2i(model, image_size, prompt, uc, sampler, step=20, scale=7.5, batch_size=8, ddim_eta=0., dtype=torch.float32, device="cuda", camera=None, num_frames=1):
     '''
@@ -182,6 +266,9 @@ def tripo_image_to_3d(path, obj_name):
     ## Removing the logs/{obj_name}/0 directory
     shutil.rmtree(f'logs/{obj_name}/0')
 
+    ## Converting the color on vertex .obj to standard .obj
+    convert_to_standard_obj(f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}')
+
     ## Rendering to a gif
     os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.obj --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
     ## Make the gif loop infinitely
@@ -231,6 +318,6 @@ def text_to_3d(prompt, obj_name, method='tripo'):
 
 if __name__ == '__main__':
     prompt = input("Enter a prompt: ")
-    text_to_3d(prompt, 'test_obj', method='crm')
+    text_to_3d(prompt, 'test_obj', method='tripo')
     # crm_image_to_3d('CRM/examples/kunkun.webp','testobj')
 

@@ -14,6 +14,9 @@ from pathlib import Path
 import hashlib
 from script.ten_second_functions import *
 from glob import glob
+import time
+from script.database_manager import *
+from script.mail_manager import *
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -47,6 +50,34 @@ def get_asset_folder(userid, input_text, current_timestamp):
 
 
 ### UTILITIES ###
+def calculate_time_taken(duration):
+    '''
+    Calculate the time taken and format it as a string.
+
+    Parameters
+    ----------
+    duration : float
+        Duration of the task execution in seconds.
+
+    Returns
+    -------
+    str
+        Formatted time taken.
+    '''
+        
+    if duration < 60:  # If duration is less than 1 minute
+        time_taken = f"{int(duration)} sec"
+    else:
+        minutes = int(duration // 60)  # Calculate the number of minutes
+        seconds = int(duration % 60)  # Calculate the remaining seconds
+
+        if seconds == 0:  # If no remaining seconds
+            time_taken = f"{minutes} min"
+        else:
+            time_taken = f"{minutes}.{seconds:02d} min"  # Format minutes and seconds
+
+    return time_taken
+
 @app.get("/get-port")
 def get_server_port():
     '''
@@ -190,7 +221,7 @@ def convert_and_pack_results_hashid(name, userid, render=True):
     return json
 
 
-def convert_and_pack_results(name, userid, render=True):
+def convert_and_pack_results(name, userid, taskid, start_time, render=True):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
 
@@ -198,6 +229,12 @@ def convert_and_pack_results(name, userid, render=True):
     ----------
     name: str
         Name of the .obj file
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
+    start_time: 
+        Starting time of the generation task
 
     Returns
     -------
@@ -258,13 +295,71 @@ def convert_and_pack_results(name, userid, render=True):
         elif os.path.isdir(f'{abs_logs_path}/{file}'):
             ## Remove the directory
             shutil.rmtree(f'{abs_logs_path}/{file}')
+
+    gif_path = f'{asset_folder}/{name}.gif'
+    zip_path = f'{asset_folder}/{name}.zip'
+    glb_path = f'{asset_folder}/{name}.glb'
+
+    end_time = time.time()  # Get the current time after executing the code
+    duration = end_time - start_time  # Calculate the duration in seconds
+    time_taken = calculate_time_taken(duration=duration)
+
+    # Save to database
+    db_connection = connect_to_database()
+    u_id = get_user_id_by_email(connection = db_connection, email=userid)
+    if u_id is not None:
+        user_library_id = insert_data_to_user_library(connection=db_connection, 
+                                                  gif_location=gif_path, model_location=glb_path, 
+                                                  task_id=taskid, zip_location=zip_path, 
+                                                  user_id=u_id)
+        insert_data_to_model_details(connection=db_connection, fidelity="LOW", 
+                                       file_format="obj, glb", time_taken=time_taken, 
+                                       input_text=input_text, user_library_id=user_library_id)
     
     # Add gif path and zip path to a json format
-    json = {"gif_path": f'{asset_folder}/{name}.gif', "zip_path": f'{asset_folder}/{name}.zip', "glb_path": f'{asset_folder}/{name}.glb'}
+    json = {"gif_path": gif_path, "zip_path": zip_path, "glb_path": glb_path}
 
     return json
 
-def process_textimage(input_file: UploadFile, input_text: str, userid: str):
+# def process_textimage(input_file: UploadFile, input_text: str, userid: str):
+#     '''
+#     Processes the uploaded image and converts to 3D
+
+#     Parameters
+#     ----------
+#     input_file: UploadFile  
+#         Uploaded image file
+    
+#     input_text: str
+#         Text to be processed
+
+#     Returns
+#     -------
+#     json: dict
+#         Dictionary containing the paths to the GIF and ZIP files
+#     '''
+
+#     # Define the output file name without extension
+#     name = os.path.splitext(input_file.filename)[0]
+    
+#     # Save the uploaded image
+#     input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
+#     with open(input_file_path, "wb") as f:
+#         shutil.copyfileobj(input_file.file, f)
+
+#     # Define the processed image file path
+#     processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
+
+#     # Call the Python scripts using subprocess
+#     subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
+#     subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
+#     subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
+
+#     # Return the json
+#     return convert_and_pack_results(name, userid)
+
+
+def process_image(input_file: UploadFile, userid: str, taskid: str = Form(...)):
     '''
     Processes the uploaded image and converts to 3D
 
@@ -272,50 +367,18 @@ def process_textimage(input_file: UploadFile, input_text: str, userid: str):
     ----------
     input_file: UploadFile  
         Uploaded image file
-    
-    input_text: str
-        Text to be processed
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     -------
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
+    start_time = time.time()  # Get the current time before executing the code
 
-    # Define the output file name without extension
-    name = os.path.splitext(input_file.filename)[0]
-    
-    # Save the uploaded image
-    input_file_path = os.path.join(UPLOAD_DIR, input_file.filename)
-    with open(input_file_path, "wb") as f:
-        shutil.copyfileobj(input_file.file, f)
-
-    # Define the processed image file path
-    processed_image_path = os.path.join(UPLOAD_DIR, f"{name}_rgba.png")
-
-    # Call the Python scripts using subprocess
-    subprocess.run(["python", "dreamgaussian/process.py", f"dreamgaussian/data/{input_file.filename}"])
-    subprocess.run(["python", "dreamgaussian/main.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
-    subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/imagedream.yaml", "input=" + processed_image_path, "prompt=" + input_text, f"save_path={name}", "force_cuda_rast=True"])
-
-    # Return the json
-    return convert_and_pack_results(name, userid)
-
-
-def process_image(input_file: UploadFile, userid: str):
-    '''
-    Processes the uploaded image and converts to 3D
-
-    Parameters
-    ----------
-    input_file: UploadFile  
-        Uploaded image file
-
-    Returns
-    -------
-    json: dict
-        Dictionary containing the paths to the GIF and ZIP files
-    '''
     # Remove - and spaces from the file name
     input_file.filename = input_file.filename.replace(' ', '_').replace('-', '_')
     ## Add date time as a suffix to the file name
@@ -332,10 +395,10 @@ def process_image(input_file: UploadFile, userid: str):
     # Define the processed image file path
     tripo_image_to_3d(input_file_path, name)
     # Return the json
-    return convert_and_pack_results(name, userid, render=False)
+    return convert_and_pack_results(name, userid, taskid=taskid, start_time=start_time, render=False)
 
 # Function to process text using process_text.py
-def process_text(input_text, userid: str):
+def process_text(input_text, userid: str, taskid: str):
     '''
     Processes the text and converts to 3D
 
@@ -343,12 +406,17 @@ def process_text(input_text, userid: str):
     ----------
     input_text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     -------
     json: dict
         Dictionary containing the paths to the GIF and ZIP files
     '''
+    start_time = time.time()  # Get the current time before executing the code
 
     ## Remove all special characters from the save path
     save_path = "".join(e for e in input_text if e.isalnum()).lower()
@@ -360,9 +428,9 @@ def process_text(input_text, userid: str):
     # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
     print(save_path)
     print(input_text)
-    text_to_3d(input_text, save_path, method='tripo')
+    text_to_3d(input_text, save_path, method='tripo')        
     # Return the json
-    return convert_and_pack_results(save_path, userid, render=False)
+    return convert_and_pack_results(save_path, userid, taskid=taskid, start_time= start_time, render=False)
 
 def add_to_port_status(port,api):
     '''
@@ -421,7 +489,7 @@ async def dummyMethod(text:str = Form(...)):
 
 # Route to handle image uploads
 @app.post("/upload-image-swagger/")
-async def process_image_endpoint_swagger(image: UploadFile, userid: str = Form(...)):
+async def process_image_endpoint_swagger(image: UploadFile, userid: str = Form(...), taskid: str = Form(...)):
     '''
     Processes the uploaded image and converts to 3D to render on Swagger UI
 
@@ -429,6 +497,10 @@ async def process_image_endpoint_swagger(image: UploadFile, userid: str = Form(.
     ----------
     image: UploadFile
         Uploaded image file
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     ------- 
@@ -441,22 +513,24 @@ async def process_image_endpoint_swagger(image: UploadFile, userid: str = Form(.
         # Add log to port_status.csv
         # add_to_port_status(port, 'upload-image-swagger')
         create_busy_file()
-        path = process_image(image, userid)        
+        path = process_image(image, userid, taskid)        
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         return FileResponse(path['gif_path'], media_type='image/gif')
 
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 
 # Route to handle text inputs
 @app.post("/process-text-swagger/")
-async def process_text_endpoint_swagger(text: str = Form(...), userid: str = Form(...)):
+async def process_text_endpoint_swagger(text: str = Form(...), userid: str = Form(...), taskid: str = Form(...)):
     '''
     Processes the text and converts to 3D to render on Swagger UI
 
@@ -464,6 +538,10 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
     ----------
     text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     -------
@@ -478,10 +556,11 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
         # add_to_port_status(port, 'process-text-swagger')
         create_busy_file()
         # Process the text
-        path = process_text(text, userid)
+        path = process_text(text, userid, taskid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         # Return the processed GIF
         return FileResponse(path['gif_path'], media_type='image/gif')
     
@@ -489,6 +568,7 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
     
 # @app.post("/upload-image-text-swagger/")
@@ -529,7 +609,7 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
 #         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/upload-image-lowf/")
-async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)):
+async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...), taskid: str = Form(...)):
     '''
     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
@@ -537,6 +617,10 @@ async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)
     ----------
     image: UploadFile
         Uploaded image file
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     -------
@@ -549,10 +633,11 @@ async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)
         # add_to_port_status(port, 'upload-image-json')
         create_busy_file()
         # Process the image
-        path = process_image(image, userid)
+        path = process_image(image, userid, taskid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         # Return the file paths in json format
         return path
 
@@ -560,11 +645,12 @@ async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
 # Route to handle text inputs
 @app.post("/process-text-lowf/")
-async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(...)):
+async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(...), taskid: str = Form(...)):
     print("user_id",userid)
     '''
     Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
@@ -573,6 +659,10 @@ async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(.
     ----------
     text: str
         Text to be processed
+    userid: ID
+        Authenticated user unique identifier
+    taskid: ID
+        Identifier for the generation task
 
     Returns
     -------
@@ -585,17 +675,19 @@ async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(.
         # add_to_port_status(port, 'process-text-json')
         create_busy_file()
         # Process the text
-        path = process_text(text, userid)
+        path = process_text(text, userid, taskid)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
         # Return the file paths in json format
+        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         return path
     
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
+        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
 # @app.post("/upload-image-text-lowf/")
