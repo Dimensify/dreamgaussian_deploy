@@ -278,7 +278,7 @@ def convert_and_pack_results(name, userid, taskid, start_time, render=True):
     subprocess.run(["obj2gltf", "-i", obj_file_name, "-o", f"{asset_folder}/{name}.glb"])
 
     ## Move the glb and gif to logs folder
-    shutil.copy(f"{asset_folder}/{name}.glb", f"{abs_logs_path}/{name}/{name}.glb")
+    # shutil.copy(f"{asset_folder}/{name}.glb", f"{abs_logs_path}/{name}/{name}.glb")
     shutil.copy(f"{asset_folder}/{name}.gif", f"{abs_logs_path}/{name}/{name}.gif")
 
     # Saving the logs folder into a zip file
