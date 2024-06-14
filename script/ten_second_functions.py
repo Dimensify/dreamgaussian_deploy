@@ -133,6 +133,77 @@ def convert_to_standard_obj(input_path, output_path):
     with open(mtl_output_path, 'a') as f:
         f.write('map_Kd {}_texture_kd.png'.format(base_name))
 
+def convert_to_vertex_color_obj(input_path, output_path):
+    """
+    Convert standard .obj with unwrapped UV and .png texture file into color on vertex .obj.
+    The output files will have the same base name as the input file.
+
+    :param input_path: Path to the input .obj file
+    :param output_path: Path to the output directory
+    """
+    
+    def clear_scene():
+        bpy.ops.object.select_all(action="SELECT")
+        bpy.ops.object.delete()
+    
+    clear_scene()
+
+    # Extract the base name of the input file without extension
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+    
+    # Import the .obj file
+    bpy.ops.import_scene.obj(filepath=input_path)
+    obj = bpy.context.selected_objects[0]
+    
+    # Load the texture image
+    img_path = os.path.join(os.path.dirname(input_path), base_name + '_texture_kd.png')
+    img = bpy.data.images.load(img_path)
+    
+    # Ensure the object is active and in object mode
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    # Add a vertex color layer
+    if not obj.data.vertex_colors:
+        obj.data.vertex_colors.new(name='Col')
+    
+    vertex_colors = obj.data.vertex_colors['Col']
+    
+    # Create a material and assign it to the object
+    mat = bpy.data.materials.new(name="TextureToVertexColor")
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    
+    if bsdf:
+        tex_image_node = mat.node_tree.nodes.new('ShaderNodeTexImage')
+        tex_image_node.image = img
+        mat.node_tree.links.new(bsdf.inputs['Base Color'], tex_image_node.outputs['Color'])
+    
+    obj.data.materials.append(mat)
+    
+    # Switch to edit mode to access the mesh data
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.project_from_view()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    # Loop through each polygon and assign vertex colors based on the texture
+    for poly in obj.data.polygons:
+        for loop_index in poly.loop_indices:
+            loop_vert_index = obj.data.loops[loop_index].vertex_index
+            uv_coords = obj.data.uv_layers.active.data[loop_index].uv
+            color = img.sample(uv_coords.x, uv_coords.y)
+            vertex_colors.data[loop_index].color = color[:3]  # Assign RGB values
+    
+    # Remove the UV map and material
+    obj.data.uv_layers.clear()
+    obj.data.materials.clear()
+    
+    os.makedirs(output_path, exist_ok=True)
+
+    # Export the .obj file
+    obj_output_path = os.path.join(output_path, base_name + '_vertex_color.obj')
+    bpy.ops.export_scene.obj(filepath=obj_output_path)
 
 def t2i(model, image_size, prompt, uc, sampler, step=20, scale=7.5, batch_size=8, ddim_eta=0., dtype=torch.float32, device="cuda", camera=None, num_frames=1):
     '''
