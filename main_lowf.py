@@ -17,6 +17,7 @@ from glob import glob
 import time
 from script.database_manager import *
 from script.mail_manager import *
+from script.misc import *
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -428,7 +429,21 @@ def process_text(input_text, userid: str, taskid: str):
     # subprocess.run(["python", "dreamgaussian/main2.py", "--config", "dreamgaussian/configs/text_mv.yaml", "prompt=" + input_text, f"save_path={save_path}", "force_cuda_rast=True"])
     print(save_path)
     print(input_text)
-    text_to_3d(input_text, save_path, method='tripo')        
+
+    ## Classify prompt
+    label = classify_prompt(input_text)
+    if label in ["character", "person", "animal"]:
+        print(f"Label {label}: Using CRM generation")
+        text_to_3d(input_text, save_path, method='crm')    
+
+    elif ["furniture"]:
+        print(f"Label {label}: Using TripoSR generation")
+        text_to_3d(input_text, save_path, method='tripo') 
+
+    else:
+        print(f"Label {label}: Defaulting to TripoSR generation")
+        text_to_3d(input_text, save_path, method='tripo')   
+
     # Return the json
     return convert_and_pack_results(save_path, userid, taskid=taskid, start_time= start_time, render=False)
 

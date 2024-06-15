@@ -8,7 +8,7 @@ def classify_prompt(prompt):
     Classify the prompt using zero-shot classification
     '''
     # Classify the prompt
-    labels = ["furniture", "vehicles", "characters", "person", 'other']
+    labels = ["furniture", "vehicles", "character", "person", 'other', 'animal']
     classification = classifier(prompt, candidate_labels=labels)
     
     ## Return the top label
@@ -17,8 +17,6 @@ def classify_prompt(prompt):
 
 if __name__ == "__main__":
     # Example text
-    texts = ["A modern sofa", "A new chair", "Table Tennis racket", "A fancy new car"]
-    labels = ["furniture", "vehicles", "characters", "person", 'other']
-
+    texts = ["A modern sofa", "A new chair", "Table Tennis racket", "A fancy new car", "A chicken"]
     for text in texts:
         print(classify_prompt(text))
