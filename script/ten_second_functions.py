@@ -378,7 +378,7 @@ def text_to_3d(prompt, obj_name, method='tripo'):
     dtype = torch.float16
     camera = None
     batch_size = 1
-    prompt = prompt + '.miniature 3D model, White background, symmetric, front facing.'
+    prompt = prompt + '.3D model, White background, symmetric, front facing.'
 
     img = t2i(model, 256, prompt, uc, sampler, step=100, scale=10, batch_size=batch_size, ddim_eta=0.0, 
             dtype=dtype, device=device, camera=camera, num_frames=4)
