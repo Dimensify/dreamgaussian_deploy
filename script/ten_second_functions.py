@@ -148,11 +148,23 @@ def convert_to_vertex_color_obj(input_path, output_path):
     
     clear_scene()
 
+    # Detect file format
+    _, ext = os.path.splitext(input_path)
+    ext = ext.lower()
+    
+    # Import file
+    if ext == '.obj':
+        bpy.ops.import_scene.obj(filepath=input_path)
+    elif ext == '.glb':
+        bpy.ops.import_scene.gltf(filepath=input_path)
+    else:
+        raise ValueError('Unsupported file format')
+
     # Extract the base name of the input file without extension
     base_name = os.path.splitext(os.path.basename(input_path))[0]
     
     # Import the .obj file
-    bpy.ops.import_scene.obj(filepath=input_path)
+    # bpy.ops.import_scene.obj(filepath=input_path)
     obj = bpy.context.selected_objects[0]
     
     # Load the texture image

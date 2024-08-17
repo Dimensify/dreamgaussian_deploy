@@ -19,6 +19,7 @@ import hashlib
 import time
 from script.database_manager import *
 from script.mail_manager import *
+from script.misc import *
 
 app = FastAPI()
 origins = ['https://dimensify.ai','null']
@@ -417,6 +418,11 @@ def process_text(input_text, userid, taskid):
     ## Make the asset folder directory if it doesn't exist
     os.makedirs(asset_folder, exist_ok=True)
 
+    ## Checking for threefiner requirements 
+    # label = classify_prompt(input_text)
+    # if label in ["furniture"]:
+    #     print(f"{label} detected. Threefiner requirements satisfied")
+
     print("The training has started..........")
     
     # Running the generation model
@@ -440,6 +446,17 @@ def process_text(input_text, userid, taskid):
 
     # Pack the .mtl, .obj model files and .jpg texture file into a single zip
     print("Export Done.....")
+
+    if label in ["furniture"]:
+        print(f"{label} detected. Threefiner requirements satisfied")
+        yaml_file_path = f"{abs_logs_path}/configs/raw.yaml"
+        max_steps = get_max_steps(yaml_file_path)
+        folder_path = f"{abs_logs_path}/save/it{max_steps}-export/"
+        os.system(f"/home/dimensify/miniconda3/envs/threefine/bin/python -m threefiner.cli sd --mesh {folder_path}/model.obj --prompt '{input_text}' --outdir {folder_path} --save model.obj")
+        os.system(f"/home/dimensify/miniconda3/envs/threefine/bin/python -m threefiner.cli sd_fixgeo --mesh {folder_path}/model.obj --prompt '{input_text}' --outdir {folder_path} --save model.obj")
+        os.system(f"/home/dimensify/miniconda3/envs/threefine/bin/python -m threefiner.cli sd --mesh {folder_path}/model.obj --prompt '{input_text}' --outdir {folder_path} --save model.obj")
+        os.system(f"/home/dimensify/miniconda3/envs/threefine/bin/python -m threefiner.cli if2 --mesh {folder_path}/model.obj --prompt '{input_text}' --outdir {folder_path} --save model.obj")
+        os.system(f"/home/dimensify/miniconda3/envs/threefine/bin/python -m threefiner.cli if2 --mesh {folder_path}/model.obj --prompt '{input_text}' --outdir {folder_path} --save model.obj")
 
     # Converting to glb
     glb_path = convert_to_glb(log_path=abs_logs_path, save_path=asset_folder, name = experiment_dir)
