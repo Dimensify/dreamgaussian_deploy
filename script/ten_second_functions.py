@@ -10,6 +10,15 @@ from mvdream.model_zoo import build_model
 import sys
 import glob
 import bpy 
+import os
+
+from pathlib import Path
+
+import imageio
+from PIL import Image
+
+sys.path.append(str(Path(__file__).parent.parent))
+os.environ['SPCONV_ALGO'] = 'native'
 
 # crm_directory = os.path.join(os.getcwd(), 'CRM')
 # sys.path.append(crm_directory)
@@ -358,7 +367,105 @@ def tripo_image_to_3d(path, obj_name):
     make_gif_loop_infinitely(f'logs/{obj_name}/{obj_name}.gif', f'logs/{obj_name}/{obj_name}.gif')
 
     return f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}/{obj_name}.gif'
-    
+
+def trellis_image_to_3d(path, obj_name):
+    '''
+    Converts an image to a 3D object and renders it as a GIF
+
+    Parameters
+    ----------
+    path: str
+        Path to the image file
+    obj_name: str
+        Name of the object
+
+    Returns
+    -------
+    str
+        Path to the 3D object file
+    str
+        Path to the GIF file
+    '''
+    from TRELLIS.trellis.pipelines import TrellisImageTo3DPipeline
+    from TRELLIS.trellis.utils import render_utils, postprocessing_utils
+
+    pipeline = TrellisImageTo3DPipeline.from_pretrained("JeffreyXiang/TRELLIS-image-large")
+    pipeline.cuda()
+
+    image = Image.open(path)
+    outputs = pipeline.run(
+        image,
+        # Optional parameters
+        seed=1,
+        # sparse_structure_sampler_params={
+        #     "steps": 12,
+        #     "cfg_strength": 7.5,
+        # },
+        # slat_sampler_params={
+        #     "steps": 12,
+        #     "cfg_strength": 3,
+        # },
+    )
+    glb = postprocessing_utils.to_glb(
+        outputs['gaussian'][0],
+        outputs['mesh'][0],
+        # Optional parameters
+        simplify=0.95,          # Ratio of triangles to remove in the simplification process
+        texture_size=1024,      # Size of the texture used for the GLB
+    )
+
+    ## Make the obj_name directory
+    os.makedirs(f'logs/{obj_name}', exist_ok=True)
+    glb.export(f'logs/{obj_name}/{obj_name}.glb')
+
+    ## Render a gif 
+    os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.glb --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
+    ## Make the gif loop infinitely
+    make_gif_loop_infinitely(f'logs/{obj_name}/{obj_name}.gif', f'logs/{obj_name}/{obj_name}.gif')
+
+    return f'logs/{obj_name}/{obj_name}.glb', f'logs/{obj_name}/{obj_name}.gif'
+        
+def fast_image_to_3d(path, obj_name):
+    '''
+    Converts an image to a 3D object and renders it as a GIF
+
+    Parameters
+    ----------
+    path: str
+        Path to the image file
+    obj_name: str
+        Name of the object
+
+    Returns
+    -------
+    str
+        Path to the 3D object file
+    str
+        Path to the GIF file
+    '''
+    from aspose.threed import Scene, License
+    from aspose.threed.formats import ObjSaveOptions
+    ## Run the command to convert the image to 3D: python run.py examples/chair.png --output-dir output/ --model-save-format glb
+    command = f'python stable-fast-3d/run.py {path} --output-dir logs/{obj_name}/ --remesh_option triangle'
+    subprocess.run(command, shell=True, cwd="./")
+    ## Moveing mesh.obj and render.mp4 from logs/{obj_name}/0 to logs/{obj_name}/ and renaming them
+    os.rename(f'logs/{obj_name}/0/mesh.glb', f'logs/{obj_name}/{obj_name}.glb') 
+    ## Removing the logs/{obj_name}/0 directory
+    shutil.rmtree(f'logs/{obj_name}/0')
+
+    ## Converting the color on vertex .obj to standard .obj
+    # convert_to_standard_obj(f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}')
+    scene = Scene.from_file(f'logs/{obj_name}/{obj_name}.glb')
+    objSaveOptions = ObjSaveOptions()
+    scene.save(f'logs/{obj_name}/{obj_name}.obj', objSaveOptions)
+
+    ## Rendering to a gif
+    os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.glb --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
+    ## Make the gif loop infinitely
+    make_gif_loop_infinitely(f'logs/{obj_name}/{obj_name}.gif', f'logs/{obj_name}/{obj_name}.gif')
+
+    return f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}/{obj_name}.gif'
+
 
 def text_to_3d(prompt, obj_name, method='tripo'):
     '''
@@ -406,9 +513,14 @@ def text_to_3d(prompt, obj_name, method='tripo'):
         return tripo_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
     elif method == 'crm':
         return crm_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
+    elif method == 'fast':
+        return fast_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
+    elif method == 'trellis':
+        return trellis_image_to_3d(f'logs/{obj_name}/image.png', obj_name)
 
 if __name__ == '__main__':
     prompt = input("Enter a prompt: ")
-    text_to_3d(prompt, 'test_obj', method='tripo')
-    # crm_image_to_3d('CRM/examples/kunkun.webp','testobj')
+    text_to_3d(prompt, 'test_obj', method='trellis')
+    # fast_image_to_3d('CRM/examples/kunkun.webp','testobj')
+    # trellis_image_to_3d('CRM/examples/kunkun.webp','testobj')
 
