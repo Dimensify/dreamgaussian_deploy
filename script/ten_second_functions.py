@@ -11,7 +11,7 @@ import sys
 import glob
 import bpy 
 import os
-
+import rembg
 from pathlib import Path
 
 import imageio
@@ -19,6 +19,7 @@ from PIL import Image
 
 sys.path.append(str(Path(__file__).parent.parent))
 os.environ['SPCONV_ALGO'] = 'native'
+rembg_session = rembg.new_session()
 
 # crm_directory = os.path.join(os.getcwd(), 'CRM')
 # sys.path.append(crm_directory)
@@ -393,6 +394,8 @@ def trellis_image_to_3d(path, obj_name):
     pipeline.cuda()
 
     image = Image.open(path)
+    ## Remove the background
+    image = rembg.remove(image, session=rembg_session, force_remove=True)
     outputs = pipeline.run(
         image,
         # Optional parameters
@@ -417,13 +420,15 @@ def trellis_image_to_3d(path, obj_name):
     ## Make the obj_name directory
     os.makedirs(f'logs/{obj_name}', exist_ok=True)
     glb.export(f'logs/{obj_name}/{obj_name}.glb')
+    ## Save as obj
+    glb.export(f'logs/{obj_name}/{obj_name}.obj', file_type='obj')
 
     ## Render a gif 
     os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.glb --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
     ## Make the gif loop infinitely
     make_gif_loop_infinitely(f'logs/{obj_name}/{obj_name}.gif', f'logs/{obj_name}/{obj_name}.gif')
 
-    return f'logs/{obj_name}/{obj_name}.glb', f'logs/{obj_name}/{obj_name}.gif'
+    return f'logs/{obj_name}/{obj_name}.obj', f'logs/{obj_name}/{obj_name}.gif'
         
 def fast_image_to_3d(path, obj_name):
     '''

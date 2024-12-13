@@ -222,7 +222,7 @@ def convert_and_pack_results_hashid(name, userid, render=True):
     return json
 
 
-def convert_and_pack_results(name, userid, taskid, start_time, render=True):
+def convert_and_pack_results(name, userid, taskid, start_time, render=True, convert_to_glb=True):
     '''
     Converts the .obj file to .gif and packs the results into a zip file
 
@@ -236,6 +236,10 @@ def convert_and_pack_results(name, userid, taskid, start_time, render=True):
         Identifier for the generation task
     start_time: 
         Starting time of the generation task
+    render: bool
+        Flag to render the GIF
+    convert_to_glb: bool
+        Flag to convert the obj file to glb
 
     Returns
     -------
@@ -274,9 +278,10 @@ def convert_and_pack_results(name, userid, taskid, start_time, render=True):
         pass
       
     ## Convering to glb file
-    print("Converting to glb")
-    obj_file_name = glob(f"{abs_logs_path}/{name}/*.obj")[0]
-    subprocess.run(["obj2gltf", "-i", obj_file_name, "-o", f"{asset_folder}/{name}.glb"])
+    if convert_to_glb:
+        print("Converting to glb")
+        obj_file_name = glob(f"{abs_logs_path}/{name}/*.obj")[0]
+        subprocess.run(["obj2gltf", "-i", obj_file_name, "-o", f"{asset_folder}/{name}.glb"])
 
     ## Move the glb and gif to logs folder
     # shutil.copy(f"{asset_folder}/{name}.glb", f"{abs_logs_path}/{name}/{name}.glb")
@@ -394,9 +399,9 @@ def process_image(input_file: UploadFile, userid: str, taskid: str = Form(...)):
         shutil.copyfileobj(input_file.file, f)
 
     # Define the processed image file path
-    tripo_image_to_3d(input_file_path, name)
+    trellis_image_to_3d(input_file_path, name)
     # Return the json
-    return convert_and_pack_results(name, userid, taskid=taskid, start_time=start_time, render=False)
+    return convert_and_pack_results(name, userid, taskid=taskid, start_time=start_time, render=False, convert_to_glb=False)
 
 # Function to process text using process_text.py
 def process_text(input_text, userid: str, taskid: str):
@@ -431,21 +436,25 @@ def process_text(input_text, userid: str, taskid: str):
     print(input_text)
 
     ## Classify prompt
-    label = classify_prompt(input_text)
-    if label in ["character", "person", "animal"]:
-        print(f"Label {label}: Using CRM generation")
-        text_to_3d(input_text, save_path, method='crm')    
+    # label = classify_prompt(input_text)
+    # convert_glb = True
+    # # if label in ["character", "person", "animal"]:
+    # if label in ["character", "person", "animal"]:
+    #     print(f"Label {label}: Using CRM generation")
+    #     text_to_3d(input_text, save_path, method='crm')   
+    #     convert_glb = True 
 
-    elif ["furniture"]:
-        print(f"Label {label}: Using TripoSR generation")
-        text_to_3d(input_text, save_path, method='tripo') 
+    # elif ["furniture"]:
+    #     print(f"Label {label}: Using TripoSR generation")
+    #     text_to_3d(input_text, save_path, method='tripo') 
 
-    else:
-        print(f"Label {label}: Defaulting to TripoSR generation")
-        text_to_3d(input_text, save_path, method='tripo')   
-
+    # else:
+    #     print(f"Label {label}: Defaulting to TripoSR generation")
+    #     text_to_3d(input_text, save_path, method='tripo')   
+    
+    text_to_3d(input_text, save_path, method='trellis')
     # Return the json
-    return convert_and_pack_results(save_path, userid, taskid=taskid, start_time= start_time, render=False)
+    return convert_and_pack_results(save_path, userid, taskid=taskid, start_time= start_time, convert_to_glb=False, render=False)
 
 def add_to_port_status(port,api):
     '''
