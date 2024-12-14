@@ -401,7 +401,7 @@ def process_image(input_file: UploadFile, userid: str, taskid: str = Form(...)):
     # Define the processed image file path
     trellis_image_to_3d(input_file_path, name)
     # Return the json
-    return convert_and_pack_results(name, userid, taskid=taskid, start_time=start_time, render=False, convert_to_glb=False)
+    return convert_and_pack_results(name, userid, taskid=taskid, start_time=start_time, render=False, convert_to_glb=True)
 
 # Function to process text using process_text.py
 def process_text(input_text, userid: str, taskid: str):
@@ -454,7 +454,7 @@ def process_text(input_text, userid: str, taskid: str):
     
     text_to_3d(input_text, save_path, method='trellis')
     # Return the json
-    return convert_and_pack_results(save_path, userid, taskid=taskid, start_time= start_time, convert_to_glb=False, render=False)
+    return convert_and_pack_results(save_path, userid, taskid=taskid, start_time= start_time, convert_to_glb=True, render=False)
 
 def add_to_port_status(port,api):
     '''
