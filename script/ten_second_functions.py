@@ -13,12 +13,14 @@ import bpy
 import os
 import rembg
 from pathlib import Path
+from diffusers import StableDiffusion3Pipeline
 
 import imageio
 from PIL import Image
 
 sys.path.append(str(Path(__file__).parent.parent))
 os.environ['SPCONV_ALGO'] = 'native'
+os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 rembg_session = rembg.new_session()
 
 # crm_directory = os.path.join(os.getcwd(), 'CRM')
@@ -261,6 +263,15 @@ def t2i(model, image_size, prompt, uc, sampler, step=20, scale=7.5, batch_size=8
 
     return list(x_sample.astype(np.uint8))
 
+def t2i_sd3(prompt, model_name="stabilityai/stable-diffusion-3-medium-diffusers"):
+
+    pipe = StableDiffusion3Pipeline.from_pretrained(model_name, torch_dtype=torch.float16)  # Use FP16 for faster generation
+    pipe.to("cuda")
+
+    ## Generating image
+    image = pipe(prompt).images[0]
+
+    return image
 
 def make_gif_loop_infinitely(input_gif_path, output_gif_path):
     '''
@@ -491,27 +502,28 @@ def text_to_3d(prompt, obj_name, method='tripo'):
         Path to the GIF file
     '''
     # global model, device, sampler, uc
-    print("### LOADING MVDREAM ###")
-    model = build_model("sd-v2.1-base-4view")
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model.device = device
-    model.to(device)
-    model.eval()
-    sampler = DDIMSampler(model)
-    uc = model.get_learned_conditioning( [""] ).to(device)
-    dtype = torch.float16
-    camera = None
-    batch_size = 1
+    # print("### LOADING MVDREAM ###")
+    # model = build_model("sd-v2.1-base-4view")
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # model.device = device
+    # model.to(device)
+    # model.eval()
+    # sampler = DDIMSampler(model)
+    # uc = model.get_learned_conditioning( [""] ).to(device)
+    # dtype = torch.float16
+    # camera = None
+    # batch_size = 1
     prompt = prompt + '.3D model, White background, symmetric, front facing.'
 
-    img = t2i(model, 256, prompt, uc, sampler, step=100, scale=10, batch_size=batch_size, ddim_eta=0.0, 
-            dtype=dtype, device=device, camera=camera, num_frames=4)
-    img = np.concatenate(img, 1)
+    # img = t2i(model, 256, prompt, uc, sampler, step=100, scale=10, batch_size=batch_size, ddim_eta=0.0, 
+    #         dtype=dtype, device=device, camera=camera, num_frames=4)
+    # img = np.concatenate(img, 1)
+    img = t2i_sd3(prompt)
     ## Save the image to logs/{obj_name}/image.png
-    img = Image.fromarray(img)
+    # img = Image.fromarray(img)
     ## make the logs/{obj_name} directory
     os.makedirs(f'logs/{obj_name}', exist_ok=True)
-    img.save(f'logs/{obj_name}/image.png')
+    img.save(f'logs/{obj_name}/image.png')\
 
     ## Use image to 3D function
     if method == 'tripo':
