@@ -419,12 +419,11 @@ def trellis_image_to_3d(path, obj_name):
 
     ## Make the obj_name directory
     os.makedirs(f'logs/{obj_name}', exist_ok=True)
-    glb.export(f'logs/{obj_name}/{obj_name}.glb')
     ## Save as obj
     glb.export(f'logs/{obj_name}/{obj_name}.obj', file_type='obj')
 
     ## Render a gif 
-    os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.glb --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
+    os.system(f"python -m kiui.render logs/{obj_name}/{obj_name}.obj --save_video logs/{obj_name}/{obj_name}.gif --wogui --force_cuda_rast")
     ## Make the gif loop infinitely
     make_gif_loop_infinitely(f'logs/{obj_name}/{obj_name}.gif', f'logs/{obj_name}/{obj_name}.gif')
 
