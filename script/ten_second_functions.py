@@ -300,8 +300,11 @@ def make_gif_loop_infinitely(input_gif_path, output_gif_path):
         # Setting the loop flag to 0 will make the GIF loop indefinitely
         frames[0].info['loop'] = 0
 
+    original_duration = gif.info.get('duration', 100)  # Default to 100ms if not specified
+    new_duration = original_duration * 2  # Double the duration to reduce speed
+
     # Save the modified frames as a new GIF file
-    frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=gif.info['duration'])
+    frames[0].save(output_gif_path, save_all=True, append_images=frames[1:], loop=0, duration=new_duration)
 
 def crm_image_to_3d(path, obj_name):
     '''
@@ -536,7 +539,7 @@ def text_to_3d(prompt, obj_name, method='tripo'):
 
 if __name__ == '__main__':
     prompt = input("Enter a prompt: ")
-    text_to_3d(prompt, 'test_obj', method='trellis')
+    # text_to_3d(prompt, 'test_obj', method='trellis')
     # fast_image_to_3d('CRM/examples/kunkun.webp','testobj')
-    # trellis_image_to_3d('CRM/examples/kunkun.webp','testobj')
+    trellis_image_to_3d('CRM/examples/kunkun.webp','testobj')
 
