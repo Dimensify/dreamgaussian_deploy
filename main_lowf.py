@@ -633,7 +633,7 @@ async def process_text_endpoint_swagger(text: str = Form(...), userid: str = For
 #         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
     
 @app.post("/upload-image-lowf/")
-async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...), taskid: str = Form(...)):
+async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...), taskid: str = Form(...), send_email_flag: bool=Form(True)):
     '''
     Processes the uploaded image and converts to 3D; returns the paths to the GIF and ZIP files in json format
 
@@ -661,7 +661,8 @@ async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
-        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
+        if send_email_flag: 
+            send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         # Return the file paths in json format
         return path
 
@@ -669,12 +670,13 @@ async def process_image_endpoint_json(image: UploadFile, userid: str = Form(...)
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
-        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
+        if send_email_flag:
+            send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
 
 # Route to handle text inputs
 @app.post("/process-text-lowf/")
-async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(...), taskid: str = Form(...)):
+async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(...), taskid: str = Form(...), send_email_flag: bool=Form(True)):
     print("user_id",userid)
     '''
     Processes the text and converts to 3D; returns the paths to the GIF and ZIP files in json format
@@ -704,14 +706,16 @@ async def process_text_endpoint_json(text: str = Form(...), userid: str = Form(.
         # remove_from_port_status(port)
         remove_busy_file()
         # Return the file paths in json format
-        send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
+        if send_email_flag:
+            send_email(send_email=True, userid=userid, status={'result':'SUCCESS'})
         return path
     
     except Exception as e:
         # Remove log from port_status.csv
         # remove_from_port_status(port)
         remove_busy_file()
-        send_email(send_email=True, userid=userid, status={'result':'FAILED'})
+        if send_email_flag:
+         send_email(send_email=True, userid=userid, status={'result':'FAILED'})
         raise HTTPException(status_code=500, detail=f"Failed to process text: {str(e)}")
 
 # @app.post("/upload-image-text-lowf/")
